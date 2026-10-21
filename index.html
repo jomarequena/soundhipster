@@ -519,12 +519,8 @@ input[type=range] { flex:1; accent-color:var(--accent); height:4px; }
 
     <!-- GENERACIONES: timeline -->
     <div class="timeline-area hidden" id="gen-section">
-      <div class="era-tags">
-        <div class="era-tag era-vinyl">🎷 Vinilo (≤1984)</div>
-        <div class="era-tag era-cd">💿 Casete/CD (1985–2004)</div>
-        <div class="era-tag era-stream">📱 Streaming (2005–hoy)</div>
-      </div>
       <div class="timeline-instr" id="gen-instr">Escucha la canción y elige su posición en la línea del tiempo ↓</div>
+      <div id="gen-decade-hint" style="text-align:center;font-size:.82rem;color:var(--fg-muted);min-height:1.2em;"></div>
       <div class="timeline" id="timeline">
         <div class="timeline-line"></div>
         <div class="tl-slots" id="tl-slots"></div>
@@ -1195,17 +1191,17 @@ function matchArtist(input) {
 // ======================================================
 function showGenSection() {
   document.getElementById('gen-section').classList.remove('hidden');
-  document.getElementById('gen-instr').textContent = 'Escucha la canción — elige dónde colocarla en la línea del tiempo ↓';
+  document.getElementById('gen-instr').textContent = 'Elige dónde colocar esta canción en la línea del tiempo ↓';
+  document.getElementById('gen-decade-hint').innerHTML = getDecadeHint(G.curSong.year);
   document.getElementById('btn-gen-confirm').classList.add('hidden');
   G.genSelectedSlot = null;
   renderTimeline(true);
 }
 
-function getEraClass(year) {
-  if (!year) return 'era-stream-card';
-  if (year<=1984) return 'era-vinyl-card';
-  if (year<=2004) return 'era-cd-card';
-  return 'era-stream-card';
+function getDecadeHint(year) {
+  if (!year) return '';
+  const d = Math.floor(year/10)*10;
+  return `💡 Pista: esta canción es de los <strong>${d}s</strong>`;
 }
 
 function renderTimeline(showInserts) {
@@ -1224,7 +1220,7 @@ function renderTimeline(showInserts) {
     let html = '';
     if (showInserts) html += insertBtn(0);
     sorted.forEach((s,i)=>{
-      html += `<div class="tl-card ${getEraClass(s.year)}">
+      html += `<div class="tl-card">
         <div class="tl-year">${s.year||'?'}</div>
         <div class="tl-song">${s.title}</div>
         <div class="tl-art">${s.artist}</div>
