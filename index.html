@@ -501,8 +501,19 @@ input[type=range] { flex:1; accent-color:var(--accent); height:4px; }
       <div class="ans-lbl" id="ans-lbl">¿Cómo se llama esta canción?</div>
       <div id="ans-opts"></div>
       <div class="ans-free hidden" id="ans-free">
-        <input type="text" id="ans-input" placeholder="Escribe el título..." onkeydown="if(event.key==='Enter')submitFree()">
-        <button class="btn btn-primary btn-sm" onclick="submitFree()">OK</button>
+        <input type="text" id="ans-input" placeholder="Título de la canción..." onkeydown="if(event.key==='Enter')document.getElementById('ans-artist-input').focus()">
+        <button class="btn btn-primary btn-sm" onclick="submitFree()" style="align-self:flex-start">OK</button>
+      </div>
+      <div class="ans-free hidden" id="ans-artist-wrap" style="margin-top:-4px;">
+        <input type="text" id="ans-artist-input" placeholder="Artista / grupo (+1 pt extra)..." onkeydown="if(event.key==='Enter')submitFree()" style="border-color:var(--border2)">
+      </div>
+      <!-- bonus artista en opciones múltiples -->
+      <div class="hidden" id="artist-bonus-wrap" style="margin-top:4px;">
+        <div class="ans-lbl" style="margin-bottom:6px;">¿Sabes el artista? (+1 pt extra)</div>
+        <div class="ans-free" id="artist-bonus-free">
+          <input type="text" id="ans-artist-bonus" placeholder="Nombre del artista o grupo..." onkeydown="if(event.key==='Enter')submitArtistBonus()">
+          <button class="btn btn-primary btn-sm" onclick="submitArtistBonus()">+1</button>
+        </div>
       </div>
     </div>
 
@@ -1126,15 +1137,20 @@ function showAnswerSection() {
   } else {
     document.getElementById('ans-opts').innerHTML='';
     document.getElementById('ans-free').classList.remove('hidden');
+    document.getElementById('ans-artist-wrap').classList.remove('hidden');
     document.getElementById('ans-input').value='';
+    document.getElementById('ans-artist-input').value='';
     setTimeout(()=>document.getElementById('ans-input').focus(),80);
   }
 }
 
 function submitFree() {
   const v=document.getElementById('ans-input').value.trim(); if(!v) return;
-  const ok=norm(v)===norm(G.curSong.title)||norm(G.curSong.title).includes(norm(v))||norm(v).includes(norm(G.curSong.title).split(' ')[0]);
-  revealSong(); revealResult(ok);
+  const okTitle=norm(v)===norm(G.curSong.title)||norm(G.curSong.title).includes(norm(v))||norm(v).includes(norm(G.curSong.title).split(' ')[0]);
+  const artV=document.getElementById('ans-artist-input').value.trim();
+  const okArtist = artV ? matchArtist(artV) : false;
+  revealSong();
+  revealResult(okTitle, okArtist, true);
 }
 
 function checkAns(sel,correct,el) {
@@ -1143,10 +1159,36 @@ function checkAns(sel,correct,el) {
   el.classList.add(ok?'correct':'wrong');
   if (!ok) document.querySelectorAll('.ans-opt').forEach(b=>{ if(b.textContent===correct) b.classList.add('correct'); });
   revealSong();
-  setTimeout(()=>revealResult(ok),1100);
+  if (ok) {
+    // mostrar campo artista para el punto extra
+    const wrap=document.getElementById('artist-bonus-wrap');
+    wrap.classList.remove('hidden');
+    document.getElementById('ans-artist-bonus').value='';
+    setTimeout(()=>document.getElementById('ans-artist-bonus').focus(), 120);
+  } else {
+    setTimeout(()=>revealResult(false, false, false), 1100);
+  }
+}
+
+function submitArtistBonus() {
+  const v=document.getElementById('ans-artist-bonus').value.trim();
+  const ok = v ? matchArtist(v) : false;
+  document.getElementById('artist-bonus-wrap').classList.add('hidden');
+  revealResult(true, ok, false);
 }
 
 function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,'').trim(); }
+function matchArtist(input) {
+  const ni = norm(input);
+  const na = norm(G.curSong.artist);
+  if (!ni || !na) return false;
+  if (ni===na) return true;
+  if (na.includes(ni) || ni.includes(na)) return true;
+  // tolerar que digan solo el primer nombre/palabra principal
+  const firstWord = na.split(' ')[0];
+  if (firstWord.length>2 && ni===firstWord) return true;
+  return false;
+}
 
 // ======================================================
 // GENERACIONES — TIMELINE
@@ -1258,20 +1300,34 @@ function revealSong() {
   document.getElementById('sinfo').classList.remove('blurred');
 }
 
-function revealResult(ok) {
+function revealResult(ok, okArtist=false, isFreeMode=false) {
   revealSong();
   const team=G.teams[G.currentTeam];
   let pts=0;
-  if (ok) { pts=G.canReplay?2:1; team.score+=pts; renderScoreboard(true); }
+  if (ok) { pts=G.canReplay?2:1; }
+  if (okArtist) pts+=1;
+  if (pts>0) { team.score+=pts; renderScoreboard(true); }
 
   document.getElementById('ans-section').classList.add('hidden');
+  document.getElementById('artist-bonus-wrap').classList.add('hidden');
   const c=document.getElementById('result-card'); c.classList.remove('hidden'); c.classList.add('fade-in');
-  document.getElementById('res-emoji').textContent=ok?(pts===2?'🎯':'✅'):'❌';
+
   const yrO = G.curSong.year ? ` (${G.curSong.year})` : '';
-  document.getElementById('res-text').textContent=ok
-    ?`¡Correcto! ${G.curSong.title}${yrO} – ${G.curSong.artist}`
-    :`Incorrecto. Era: ${G.curSong.title}${yrO} – ${G.curSong.artist}`;
-  document.getElementById('res-pts').textContent=ok?`+${pts} punto${pts>1?'s':''} para ${team.name}`:'Sin puntos esta vez';
+  if (!ok) {
+    document.getElementById('res-emoji').textContent='❌';
+    document.getElementById('res-text').textContent=`Incorrecto. Era: ${G.curSong.title}${yrO} – ${G.curSong.artist}`;
+    document.getElementById('res-pts').textContent='Sin puntos esta vez';
+  } else {
+    const baseOk = G.canReplay?2:1;
+    let lines = [];
+    lines.push(`🎵 Canción: +${baseOk} pt${baseOk>1?'s':''}`);
+    if (okArtist) lines.push(`🎤 Artista: +1 pt extra ✅`);
+    else if (isFreeMode || !okArtist) lines.push(`🎤 Artista: no acertado`);
+
+    document.getElementById('res-emoji').textContent = pts>=3?'🏆': okArtist?'🎯':'✅';
+    document.getElementById('res-text').textContent=`${G.curSong.title}${yrO} – ${G.curSong.artist}`;
+    document.getElementById('res-pts').innerHTML=`${lines.join(' &nbsp;·&nbsp; ')}<br><strong>+${pts} punto${pts!==1?'s':''} para ${team.name}</strong>`;
+  }
 }
 
 function nextTurn() {
