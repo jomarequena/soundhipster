@@ -937,16 +937,36 @@ async function fetchSongs(genres, needed) {
   // Términos especiales por género
   const specialTerms = {
     'spanish': [
-      'Shakira', 'Enrique Iglesias', 'Alejandro Sanz', 'Maluma', 'Bad Bunny',
-      'J Balvin', 'Daddy Yankee', 'Rosalía', 'C. Tangana', 'Ozuna', 'Karol G',
-      'Melendi', 'Pablo Alborán', 'Fito y Fitipaldis', 'Estopa', 'Vetusta Morla',
-      'La Oreja de Van Gogh', 'Amaral', 'Heroes del Silencio', 'El Canto del Loco',
-      'Ana Mena', 'Aitana', 'Duki', 'Bizarrap', 'Rauw Alejandro', 'Anuel AA',
-      'Nicky Jam', 'Luis Fonsi', 'Marc Anthony', 'Romeo Santos', 'Juan Luis Guerra',
-      'Carlos Vives', 'Juanes', 'Maná', 'Alejandro Fernández', 'Ricky Martin',
-      'Jennifer Lopez', 'Pitbull español', 'pop español', 'musica española',
-      'reggaeton hits', 'latin pop', 'canciones en español', 'éxitos latinos',
-      'flamenco pop', 'nueva canción española', 'exitos españa',
+      // 60s–70s: bolero, copla, nueva canción, rock en español
+      'Julio Iglesias', 'Raphael', 'Rocío Jurado', 'Nino Bravo', 'Camilo Sesto',
+      'Joan Manuel Serrat', 'Peret', 'Los Bravos', 'Massiel', 'Los Brincos',
+      'Isabel Pantoja', 'Miguel Ríos', 'Víctor Manuel', 'Ana Belén',
+      'José José', 'Roberto Carlos', 'Armando Manzanero', 'Jeanette',
+      // 80s: movida, pop latino, balada
+      'Mecano', 'Alaska', 'Hombres G', 'La Unión', 'Duncan Dhu',
+      'El Último de la Fila', 'Radio Futura', 'Locomía', 'Los Secretos',
+      'Dyango', 'Paloma San Basilio', 'Emmanuel', 'Luis Miguel',
+      'Menudo', 'Miami Sound Machine', 'Wilfrido Vargas',
+      // 90s: pop, rock, balada, salsa
+      'Heroes del Silencio', 'La Oreja de Van Gogh', 'Jarabe de Palo',
+      'Alejandro Sanz', 'Enrique Iglesias', 'Ricky Martin', 'Marc Anthony',
+      'Shakira', 'Carlos Vives', 'Juan Luis Guerra', 'Maná', 'Café Tacvba',
+      'Fobia', 'Soda Stereo', 'Los Fabulosos Cadillacs', 'Aterciopelados',
+      'Gloria Estefan', 'Thalia', 'Cristian Castro',
+      // 2000s: pop rock, flamenco pop, reggaeton naciente
+      'Juanes', 'Amaral', 'Fito y Fitipaldis', 'Estopa', 'El Canto del Loco',
+      'Melendi', 'Malú', 'David Bisbal', 'David Bustamante', 'Chenoa',
+      'Daddy Yankee', 'Don Omar', 'Wisin y Yandel', 'Calle 13',
+      'Alejandro Fernández', 'Sin Bandera', 'Reik', 'Camila',
+      // 2010s: urban, indie, trap
+      'J Balvin', 'Nicky Jam', 'Maluma', 'Ozuna', 'Luis Fonsi',
+      'Vetusta Morla', 'Rosalía', 'C. Tangana', 'Pablo Alborán',
+      'Ana Mena', 'Aitana', 'Morat', 'Sebastián Yatra',
+      'Karol G', 'Becky G', 'Natti Natasha',
+      // 2020s: trap, urbano, pop actual
+      'Bad Bunny', 'Rauw Alejandro', 'Anuel AA', 'Bizarrap', 'Duki',
+      'Myke Towers', 'Jhay Cortez', 'Farruko', 'Arcángel',
+      'Quevedo', 'Mora', 'Beret', 'María Becerra',
     ],
     'megahits': [
       'biggest hits ever', 'best songs of all time', 'most popular songs',
