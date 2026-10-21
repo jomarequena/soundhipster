@@ -734,47 +734,46 @@ async function startGame() {
 }
 
 // ======================================================
-// FETCH SONGS — iTunes Search API (30s previews, no auth, HTTPS)
+// FETCH SONGS — Deezer API via proxy CORS (previews 30s sin auth)
+// Deezer no envía cabeceras CORS — usamos proxy.corsfix.com
+// El audio (dzcdn.net) sí tiene CORS abierto, se reproduce directo
 // ======================================================
 
-// Búsqueda iTunes con término y offset aleatorio para variedad
-async function fetchITunes(term, limit) {
-  limit = limit || 25;
-  // offset aleatorio para no sacar siempre los mismos resultados
-  const offset = Math.floor(Math.random() * 200);
-  const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=${limit}&offset=${offset}&media=music`;
-  console.log('[SoundHipster] iTunes fetch:', url);
+const CORS_PROXY = 'https://proxy.corsfix.com/?';
+
+async function fetchDeezer(term, limit, offset) {
+  const deezerUrl = `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=${limit || 25}&index=${offset || 0}&output=json`;
+  const url = CORS_PROXY + deezerUrl;
+  console.log('[SoundHipster] Fetch:', deezerUrl);
   const r = await fetch(url);
-  if (!r.ok) throw new Error(`iTunes HTTP ${r.status}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const d = await r.json();
-  console.log('[SoundHipster] iTunes results:', d.resultCount, 'for', term);
-  return (d.results || []).filter(t => t.previewUrl);
+  console.log('[SoundHipster] Resultados:', d.data?.length, 'para', term);
+  return (d.data || []).filter(t => t.preview);
 }
 
 async function fetchSongs(genres, needed) {
   needed = needed || (G.maxTurns + 10);
 
-  // Términos de búsqueda variados — mezclamos géneros con términos base
   const baseTerms = [
-    'top hits', 'greatest hits', 'best songs', 'classic hits',
-    'pop 2000s', 'pop 2010s', 'pop 1990s', 'pop 1980s',
+    'top hits', 'greatest hits', 'best songs ever', 'classic hits',
+    'pop hits 2000s', 'pop hits 2010s', 'pop hits 1990s', 'pop hits 1980s',
     'rock anthems', 'dance hits', 'party songs', 'summer hits',
-    'one hit wonders', 'number one', 'radio hits',
-    'hip hop', 'rap hits', 'rnb soul', 'soul classics',
-    'indie', 'alternative', 'britpop', 'grunge',
-    'electronic dance', 'house music', 'trance',
-    'latin', 'reggaeton', 'salsa romantica', 'bachata',
-    'pop español', 'musica latina', 'flamenco',
-    'jazz', 'blues', 'country',
-    'kpop', 'anime', 'movie soundtrack', 'billboard'
+    'one hit wonders', 'number one hits', 'radio hits',
+    'hip hop classics', 'rap hits', 'rnb hits', 'soul classics',
+    'indie hits', 'alternative hits', 'britpop', 'grunge hits',
+    'edm hits', 'house music', 'techno', 'trance hits',
+    'latin hits', 'reggaeton hits', 'salsa', 'bachata',
+    'pop español', 'musica española', 'flamenco pop',
+    'jazz standards', 'blues classics', 'country hits',
+    'k-pop hits', 'movie soundtracks', 'billboard hot 100'
   ];
 
-  // Mezclar términos: primero géneros seleccionados, luego base aleatorio
   const terms = [];
   genres.forEach(g => {
     terms.push(g);
     terms.push(`${g} hits`);
-    terms.push(`best ${g} songs`);
+    terms.push(`best ${g}`);
   });
   const shuffledBase = [...baseTerms].sort(() => Math.random() - 0.5);
   terms.push(...shuffledBase);
@@ -785,30 +784,28 @@ async function fetchSongs(genres, needed) {
 
   while (fetched.length < needed && i < terms.length) {
     try {
-      const results = await fetchITunes(terms[i], 25);
+      const offset = Math.floor(Math.random() * 80);
+      const results = await fetchDeezer(terms[i], 25, offset);
       for (const t of results.sort(() => Math.random() - 0.5)) {
-        if (!seen.has(t.trackId)) {
-          seen.add(t.trackId);
-          // Extraer año de releaseDate
-          const year = t.releaseDate ? parseInt(t.releaseDate.slice(0,4)) : null;
+        if (!seen.has(t.id)) {
+          seen.add(t.id);
           fetched.push({
-            id: t.trackId,
-            title: t.trackName || '',
-            artist: t.artistName || '',
-            album: t.collectionName || '',
-            cover: (t.artworkUrl100 || '').replace('100x100', '300x300'),
-            preview: t.previewUrl,   // URL directa HTTPS desde iTunes CDN
-            year: year
+            id: t.id,
+            title: t.title || '',
+            artist: t.artist?.name || '',
+            album: t.album?.title || '',
+            cover: t.album?.cover_medium || t.album?.cover || '',
+            preview: t.preview,   // URL CDN Deezer — CORS abierto, sin proxy
+            year: null
           });
         }
       }
       console.log('[SoundHipster] Total:', fetched.length, '/', needed);
     } catch(e) {
-      console.error('[SoundHipster] Error en término "' + terms[i] + '":', e.message);
+      console.error('[SoundHipster] Error en "' + terms[i] + '":', e.message);
     }
     i++;
-    // Pequeña pausa para no saturar la API
-    if (i % 3 === 0) await new Promise(r => setTimeout(r, 200));
+    if (i % 3 === 0) await new Promise(r => setTimeout(r, 150));
   }
 
   shuffle(fetched);
