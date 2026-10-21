@@ -1224,7 +1224,7 @@ function showGenSection() {
   document.getElementById('gen-decade-hint').innerHTML = getDecadeHint(G.curSong.year);
   document.getElementById('btn-gen-confirm').classList.add('hidden');
   G.genSelectedSlot = null;
-  renderTimeline(true);
+  renderTimeline(true, true); // años ocultos hasta confirmar
 }
 
 function getDecadeHint(year) {
@@ -1233,7 +1233,7 @@ function getDecadeHint(year) {
   return `💡 Pista: esta canción es de los <strong>${d}s</strong>`;
 }
 
-function renderTimeline(showInserts) {
+function renderTimeline(showInserts, hideYears=false) {
   const slots = document.getElementById('tl-slots');
   slots.innerHTML='';
   const sorted = [...G.timeline].sort((a,b)=>(a.year||9999)-(b.year||9999));
@@ -1249,8 +1249,9 @@ function renderTimeline(showInserts) {
     let html = '';
     if (showInserts) html += insertBtn(0);
     sorted.forEach((s,i)=>{
+      const yearTxt = hideYears ? '···' : (s.year||'?');
       html += `<div class="tl-card">
-        <div class="tl-year">${s.year||'?'}</div>
+        <div class="tl-year">${yearTxt}</div>
         <div class="tl-song">${s.title}</div>
         <div class="tl-art">${s.artist}</div>
       </div>`;
@@ -1292,6 +1293,8 @@ function confirmGenPlacement() {
   }
 
   G.timeline.push({ ...G.curSong });
+  // revelar años de todas las cartas antes de ocultar la sección
+  renderTimeline(false, false);
   revealSong();
   document.getElementById('gen-section').classList.add('hidden');
   revealGenResult(isCorrect, year);
