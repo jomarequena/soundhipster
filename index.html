@@ -737,30 +737,35 @@ async function startGame() {
 // El audio (dzcdn.net) sí tiene CORS abierto, se reproduce directo
 // ======================================================
 
-// Proxies CORS en orden de preferencia — se intenta el siguiente si falla
-const CORS_PROXIES = [
-  'https://proxy.corsfix.com/?',
-  'https://corsproxy.io/?',
-  'https://api.allorigins.win/raw?url=',
-];
-
+// Llamada al proxy propio en Vercel (/api/search) — sin CORS, sin ad-blockers
+// Fallback: proxies públicos si se ejecuta desde GitHub Pages
 async function fetchDeezer(term, limit, offset) {
-  const deezerUrl = `https://api.deezer.com/search?q=${encodeURIComponent(term)}&limit=${limit || 25}&index=${offset || 0}&output=json`;
-  console.log('[SoundHipster] Buscando:', term);
-  for (const proxy of CORS_PROXIES) {
+  const q = encodeURIComponent(term);
+  const lim = limit || 25;
+  const idx = offset || 0;
+
+  // 1. Intentar nuestro proxy Vercel (mismo dominio, sin problemas)
+  const endpoints = [
+    `/api/search?q=${q}&limit=${lim}&index=${idx}`,
+    `https://proxy.corsfix.com/?https://api.deezer.com/search?q=${q}&limit=${lim}&index=${idx}&output=json`,
+    `https://corsproxy.io/?https://api.deezer.com/search?q=${q}&limit=${lim}&index=${idx}&output=json`,
+  ];
+
+  for (const url of endpoints) {
     try {
-      const r = await fetch(proxy + encodeURIComponent(deezerUrl));
-      if (!r.ok) { console.warn('[SoundHipster] Proxy', proxy, 'devolvió', r.status); continue; }
+      console.log('[SoundHipster] Probando:', url.split('?')[0]);
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) { console.warn('[SoundHipster]', r.status, url); continue; }
       const d = await r.json();
-      // allorigins devuelve {contents: "..."} — desempaquetamos si es necesario
       const parsed = typeof d.contents === 'string' ? JSON.parse(d.contents) : d;
       const tracks = (parsed.data || []).filter(t => t.preview);
       if (tracks.length > 0) {
-        console.log('[SoundHipster] OK con proxy', proxy, '—', tracks.length, 'tracks para', term);
+        console.log('[SoundHipster] ✓', tracks.length, 'tracks para', term);
         return tracks;
       }
-    } catch(e) { console.warn('[SoundHipster] Proxy', proxy, 'falló:', e.message); }
+    } catch(e) { console.warn('[SoundHipster] Falló:', e.message); }
   }
+  console.error('[SoundHipster] Todos los endpoints fallaron para:', term);
   return [];
 }
 
