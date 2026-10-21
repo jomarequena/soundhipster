@@ -773,6 +773,7 @@ async function fetchSongs(genres, needed) {
   needed = needed || (G.maxTurns + 10);
 
   const baseTerms = [
+    // Internacional
     'top hits', 'greatest hits', 'best songs ever', 'classic hits',
     'pop hits 2000s', 'pop hits 2010s', 'pop hits 1990s', 'pop hits 1980s',
     'rock anthems', 'dance hits', 'party songs', 'summer hits',
@@ -780,10 +781,24 @@ async function fetchSongs(genres, needed) {
     'hip hop classics', 'rap hits', 'rnb hits', 'soul classics',
     'indie hits', 'alternative hits', 'britpop', 'grunge hits',
     'edm hits', 'house music', 'techno', 'trance hits',
-    'latin hits', 'reggaeton hits', 'salsa', 'bachata',
-    'pop español', 'musica española', 'flamenco pop',
     'jazz standards', 'blues classics', 'country hits',
-    'k-pop hits', 'movie soundtracks', 'billboard hot 100'
+    'k-pop hits', 'movie soundtracks', 'billboard hot 100',
+    // Español — mucho más peso
+    'reggaeton hits', 'pop español', 'musica española', 'flamenco pop',
+    'latin hits', 'salsa', 'bachata', 'merengue',
+    'Alejandro Sanz', 'Shakira', 'Enrique Iglesias', 'Maluma',
+    'Bad Bunny', 'J Balvin', 'Daddy Yankee', 'Ozuna',
+    'Rosalía', 'C. Tangana', 'Melendi', 'Pablo Alborán',
+    'La Oreja de Van Gogh', 'Amaral', 'Estopa', 'Heroes del Silencio',
+    'Fito y Fitipaldis', 'El Canto del Loco', 'Vetusta Morla',
+    'Ana Mena', 'Aitana', 'Duki', 'Bizarrap',
+    'Rauw Alejandro', 'Anuel AA', 'Karol G', 'Nicky Jam',
+    'Luis Fonsi', 'Marc Anthony', 'Romeo Santos', 'Juan Luis Guerra',
+    'Carlos Vives', 'Juanes', 'Maná', 'Alejandro Fernández',
+    'musica latina 2000s', 'musica latina 2010s', 'musica latina 2020s',
+    'exitos españa', 'pop rock español', 'flamenco rumba',
+    'corridos tumbados', 'trap latino', 'cumbia hits',
+    'canciones en español', 'éxitos latinos', 'nueva canción española'
   ];
 
   const terms = [];
@@ -806,14 +821,16 @@ async function fetchSongs(genres, needed) {
       for (const t of results.sort(() => Math.random() - 0.5)) {
         if (!seen.has(t.id)) {
           seen.add(t.id);
+          // release_date viene en búsqueda como "YYYY-MM-DD" o solo "YYYY"
+          const yr = t.release_date ? parseInt(t.release_date.slice(0,4)) : null;
           fetched.push({
             id: t.id,
             title: t.title || '',
             artist: t.artist?.name || '',
             album: t.album?.title || '',
             cover: t.album?.cover_medium || t.album?.cover || '',
-            preview: t.preview,   // URL CDN Deezer — CORS abierto, sin proxy
-            year: null
+            preview: t.preview,
+            year: yr
           });
         }
       }
@@ -1110,7 +1127,8 @@ function revealGenResult(ok, year) {
 // ======================================================
 function revealSong() {
   document.getElementById('stitle').textContent=G.curSong.title;
-  document.getElementById('sartist').textContent=G.curSong.artist;
+  const yr = G.curSong.year ? ` · ${G.curSong.year}` : '';
+  document.getElementById('sartist').textContent=G.curSong.artist + yr;
   document.getElementById('sinfo').classList.remove('blurred');
 }
 
@@ -1123,9 +1141,10 @@ function revealResult(ok) {
   document.getElementById('ans-section').classList.add('hidden');
   const c=document.getElementById('result-card'); c.classList.remove('hidden'); c.classList.add('fade-in');
   document.getElementById('res-emoji').textContent=ok?(pts===2?'🎯':'✅'):'❌';
+  const yrO = G.curSong.year ? ` (${G.curSong.year})` : '';
   document.getElementById('res-text').textContent=ok
-    ?`¡Correcto! ${G.curSong.title} – ${G.curSong.artist}`
-    :`Incorrecto. Era: ${G.curSong.title} – ${G.curSong.artist}`;
+    ?`¡Correcto! ${G.curSong.title}${yrO} – ${G.curSong.artist}`
+    :`Incorrecto. Era: ${G.curSong.title}${yrO} – ${G.curSong.artist}`;
   document.getElementById('res-pts').textContent=ok?`+${pts} punto${pts>1?'s':''} para ${team.name}`:'Sin puntos esta vez';
 }
 
@@ -1237,7 +1256,8 @@ function bingoCantarCancion() {
   _playBingo(cfg.duration, ()=>{
     // revelar
     document.getElementById('bingo-stitle').textContent=nextSong.title;
-    document.getElementById('bingo-sartist').textContent=nextSong.artist;
+    const bingoYr = nextSong.year ? ` · ${nextSong.year}` : '';
+    document.getElementById('bingo-sartist').textContent=nextSong.artist + bingoYr;
     document.getElementById('bingo-sinfo').classList.remove('blurred');
     if (nextSong.cover) document.getElementById('bingo-cover').innerHTML=`<img src="${nextSong.cover}" alt="">`;
 
