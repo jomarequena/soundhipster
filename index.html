@@ -979,7 +979,8 @@ async function fetchSongs(genres, needed) {
       for (const t of results.sort(() => Math.random() - 0.5)) {
         if (!seen.has(t.id)) {
           seen.add(t.id);
-          const yr = t.release_date ? parseInt(t.release_date.slice(0,4)) : null;
+          const yrParsed = t.release_date ? parseInt(t.release_date.slice(0,4)) : null;
+          const yr = (yrParsed && yrParsed > 1900 && yrParsed < 2100) ? yrParsed : null;
           fetched.push({
             id: t.id,
             title: t.title || '',
@@ -1323,22 +1324,30 @@ function confirmGenPlacement() {
 
   let isCorrect = false;
   if (year) {
-    // La respuesta es correcta si el año de la nueva canción cae entre los años
-    // de las dos cartas vecinas que eligió el jugador.
-    // prevCard/nextCard son las cartas reales (con sus años) del display desordenado.
-    const lo = prevCard?.year || 0;
-    const hi = nextCard?.year || 9999;
-    // Si las cartas vecinas están en orden cronológico inverso (display desordenado),
-    // normalizamos el rango para que lo <= hi
-    const rangeMin = Math.min(lo, hi);
-    const rangeMax = Math.max(lo, hi);
-    // Además, las cartas vecinas deben ser cronológicamente adyacentes en el timeline real:
-    // no debe haber ninguna carta existente con año entre rangeMin y rangeMax
-    const hasCardBetween = sorted.some(s => {
-      const y = s.year || 0;
-      return y > rangeMin && y < rangeMax;
-    });
-    isCorrect = year >= rangeMin && year <= rangeMax && !hasCardBetween;
+    // Las cartas se mostraron en orden de inserción (G.timeline).
+    // Obtenemos las dos cartas vecinas que eligió el jugador.
+    const display = [...G.timeline];
+    const prevCard = display[G.genSelectedSlot - 1] || null;
+    const nextCard = display[G.genSelectedSlot] || null;
+
+    // Encontramos sus posiciones en el array ordenado por año
+    const prevSortedIdx = prevCard
+      ? sorted.findIndex(s => s.id === prevCard.id)
+      : -1;
+    const nextSortedIdx = nextCard
+      ? sorted.findIndex(s => s.id === nextCard.id)
+      : sorted.length;
+
+    // El slot elegido en el sorted es entre prevSortedIdx y nextSortedIdx
+    // Son adyacentes si nextSortedIdx === prevSortedIdx + 1
+    const chosenSlotInSorted = prevSortedIdx + 1; // slot entre las dos cartas en sorted
+
+    // Slot correcto en sorted: primera carta con año mayor que el nuevo
+    const correctSlot = sorted.findIndex(s => (s.year || 9999) > year);
+    const trueSlot = correctSlot === -1 ? sorted.length : correctSlot;
+
+    isCorrect = (chosenSlotInSorted === trueSlot)
+             && (nextSortedIdx === prevSortedIdx + 1); // las vecinas son adyacentes en sorted
   } else {
     // sin año disponible: dar punto pero avisar
     isCorrect = true;
