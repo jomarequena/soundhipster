@@ -1236,10 +1236,14 @@ function getDecadeHint(year) {
 function renderTimeline(showInserts, hideYears=false) {
   const slots = document.getElementById('tl-slots');
   slots.innerHTML='';
-  const sorted = [...G.timeline].sort((a,b)=>(a.year||9999)-(b.year||9999));
+  // Mientras los años están ocultos, mostrar en orden de inserción para no revelar cronología
+  // Cuando se revelan, ordenar por año
+  const display = hideYears
+    ? [...G.timeline]
+    : [...G.timeline].sort((a,b)=>(a.year||9999)-(b.year||9999));
   const newCard = `<div class="tl-card new-song"><div class="tl-year">?</div><div class="tl-song">${G.curSong.title}</div><div class="tl-art">${G.curSong.artist}</div></div>`;
 
-  if (sorted.length === 0) {
+  if (display.length === 0) {
     if (showInserts) {
       slots.innerHTML = `${insertBtn(0)}${newCard}${insertBtn(1)}`;
     } else {
@@ -1248,7 +1252,7 @@ function renderTimeline(showInserts, hideYears=false) {
   } else {
     let html = '';
     if (showInserts) html += insertBtn(0);
-    sorted.forEach((s,i)=>{
+    display.forEach((s,i)=>{
       const yearTxt = hideYears ? '···' : (s.year||'?');
       html += `<div class="tl-card">
         <div class="tl-year">${yearTxt}</div>
@@ -1282,11 +1286,27 @@ function confirmGenPlacement() {
   const year = G.curSong.year;
   const sorted = [...G.timeline].sort((a,b)=>(a.year||9999)-(b.year||9999));
 
+  // Las cartas se mostraron en orden de inserción (G.timeline sin ordenar).
+  // El jugador eligió el slot N entre esas cartas desordenadas.
+  // Identificamos las dos cartas vecinas que eligió el jugador.
+  const display = [...G.timeline]; // mismo orden que se mostró (inserción)
+  const prevCard = display[G.genSelectedSlot - 1] || null;
+  const nextCard = display[G.genSelectedSlot] || null;
+
   let isCorrect = false;
   if (year) {
-    const before = sorted[G.genSelectedSlot-1]?.year || 0;
-    const after  = sorted[G.genSelectedSlot]?.year  || 9999;
-    isCorrect = year>=before && year<=after;
+    // Correcto si:
+    // 1. Las dos cartas vecinas son adyacentes en el orden cronológico real
+    // 2. El año de la nueva canción cae entre ellas
+    const prevIdx = prevCard ? sorted.findIndex(s => s.title===prevCard.title && s.year===prevCard.year) : -1;
+    const nextIdx = nextCard ? sorted.findIndex(s => s.title===nextCard.title && s.year===nextCard.year) : sorted.length;
+    const sortedPrevIdx = prevCard ? prevIdx : -1;
+    const sortedNextIdx = nextCard ? nextIdx : sorted.length;
+    // Son adyacentes si sus índices en sorted son consecutivos
+    const areAdjacent = (sortedNextIdx - sortedPrevIdx) === 1;
+    const before = sorted[sortedPrevIdx]?.year || 0;
+    const after  = sorted[sortedNextIdx]?.year  || 9999;
+    isCorrect = areAdjacent && year >= before && year <= after;
   } else {
     // sin año disponible: dar punto pero avisar
     isCorrect = true;
