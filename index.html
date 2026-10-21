@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SoundHipster</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap">
+
+<style>
+/* ===== TOKENS — dark-first design ===== */
+/* Layout: app de pantalla única con navegación entre modos */
+:root {
+  --bg: #0c0c10;
+  --surface: #16161f;
+  --surface2: #1f1f2c;
+  --surface3: #282836;
+  --border: #2a2a3a;
+  --border2: #353548;
+  --fg: #e9e7f2;
+  --fg-muted: #7e7c90;
+  --fg-dim: #4e4c5e;
+  --accent: #7c3aed;
+  --accent-bright: #a855f7;
+  --accent-glow: rgba(124,58,237,0.22);
+  --accent2: #2563eb;       /* azul para generaciones */
+  --accent3: #16a34a;       /* verde para bingo */
+  --good: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --era-vinyl: #d97706;     /* era vinil */
+  --era-cd: #2563eb;        /* era casete/cd */
+  --era-stream: #7c3aed;    /* era streaming */
+  --r: 12px;
+  --r-sm: 8px;
+  color-scheme: dark;
+  --font-d: 'Space Grotesk', system-ui, sans-serif;
+  --font-b: 'Inter', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-b);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left,0px));
+  padding-right: max(16px, env(safe-area-inset-right,0px));
+  display: flex; flex-direction: column; align-items: center;
+}
+h1,h2,h3 { font-family: var(--font-d); text-wrap: balance; margin: 0; }
+img { max-width: 100%; }
+button { font-family: var(--font-b); }
+
+/* ===== APP WRAPPER ===== */
+#app { width: 100%; max-width: 700px; min-height: 100dvh; display: flex; flex-direction: column; padding-block: 28px; gap: 0; }
+
+/* ===== UTIL ===== */
+.hidden { display: none !important; }
+.fade-in { animation: fi .3s ease both; }
+@keyframes fi { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+.screen { flex:1; display:flex; flex-direction:column; gap:20px; }
+
+/* ===== LOGO ===== */
+.logo { font-family:var(--font-d); font-size:1.45rem; font-weight:800; letter-spacing:-.02em; }
+.logo .hl { color:var(--accent-bright); }
+.logo .dim { color:var(--fg-muted); font-weight:400; }
+
+/* ===== MODE SELECTOR ===== */
+.mode-tabs { display:grid; grid-template-columns: repeat(3,1fr); gap:10px; }
+.mode-tab {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  background:var(--surface); border:2px solid var(--border); border-radius:var(--r);
+  padding:16px 10px; cursor:pointer; transition:all .18s; text-align:center;
+}
+.mode-tab:hover { border-color:var(--border2); background:var(--surface2); }
+.mode-tab.active { border-color:var(--accent); background:var(--surface2); box-shadow:0 0 18px var(--accent-glow); }
+.mode-tab .mode-icon { font-size:1.8rem; }
+.mode-tab .mode-name { font-family:var(--font-d); font-weight:700; font-size:.9rem; }
+.mode-tab .mode-desc { font-size:.72rem; color:var(--fg-muted); line-height:1.3; }
+
+/* ===== CARD ===== */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:22px; }
+.card h2 { font-size:1.1rem; margin-bottom:14px; }
+
+/* ===== FIELDS ===== */
+.field { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+.field:last-child { margin-bottom:0; }
+.label { font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:var(--fg-muted); }
+.teams-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px; }
+.team-wrap {
+  display:flex; align-items:center; gap:8px;
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-sm); padding:8px 12px;
+}
+.dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.team-wrap input { background:none; border:none; outline:none; color:var(--fg); font-size:.88rem; width:100%; }
+.range-wrap { display:flex; align-items:center; gap:12px; }
+input[type=range] { flex:1; accent-color:var(--accent); height:4px; }
+.rval { font-family:var(--font-d); font-weight:700; font-size:1.05rem; color:var(--accent-bright); min-width:36px; text-align:right; }
+.stepper { display:flex; align-items:center; border:1px solid var(--border); border-radius:var(--r-sm); overflow:hidden; width:fit-content; }
+.stepper button { background:var(--surface2); border:none; color:var(--fg); font-size:1.1rem; padding:6px 13px; cursor:pointer; transition:background .15s; }
+.stepper button:hover { background:var(--border); }
+.stepper .sv { font-family:var(--font-d); font-weight:700; font-size:1.05rem; padding:6px 14px; color:var(--accent-bright); background:var(--surface); min-width:44px; text-align:center; }
+.chips { display:flex; flex-wrap:wrap; gap:7px; }
+.chip { padding:5px 13px; border-radius:99px; border:1px solid var(--border); background:var(--surface2); color:var(--fg-muted); font-size:.8rem; cursor:pointer; transition:all .15s; user-select:none; }
+.chip:hover { border-color:var(--accent); color:var(--fg); }
+.chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.sep { border:none; border-top:1px solid var(--border); margin:14px 0; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  font-family:var(--font-d); font-weight:600; font-size:.92rem;
+  padding:11px 22px; border-radius:var(--r-sm); border:none; cursor:pointer;
+  transition:all .18s; text-decoration:none; white-space:nowrap;
+}
+.btn-primary { background:var(--accent); color:#fff; box-shadow:0 0 18px var(--accent-glow); }
+.btn-primary:hover { background:var(--accent-bright); transform:translateY(-1px); }
+.btn-ghost { background:var(--surface2); color:var(--fg); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--border); }
+.btn-good { background:var(--good); color:#fff; }
+.btn-bad { background:var(--bad); color:#fff; }
+.btn:disabled { opacity:.38; cursor:not-allowed; transform:none !important; }
+.btn-full { width:100%; }
+.btn-sm { padding:7px 14px; font-size:.82rem; }
+
+/* ===== SCOREBOARD ===== */
+.scoreboard { display:grid; gap:7px; }
+.team-row {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm); padding:11px 15px; transition:all .22s;
+}
+.team-row.active-team { border-color:var(--accent); background:var(--surface2); box-shadow:0 0 14px var(--accent-glow); }
+.team-row .tname { display:flex; align-items:center; gap:9px; font-weight:600; }
+.team-row .tscore { font-family:var(--font-d); font-size:1.25rem; font-weight:700; font-variant-numeric:tabular-nums; color:var(--accent-bright); }
+
+/* ===== TURN HEADER ===== */
+.turn-hdr { text-align:center; padding:4px 0; }
+.turn-lbl { font-size:.74rem; text-transform:uppercase; letter-spacing:.1em; color:var(--fg-muted); }
+.turn-nm { font-family:var(--font-d); font-size:1.35rem; font-weight:700; }
+
+/* mode badge */
+.mode-badge { display:inline-flex; align-items:center; gap:5px; font-size:.75rem; font-weight:600; padding:3px 10px; border-radius:99px; background:var(--surface3); border:1px solid var(--border2); color:var(--fg-muted); width:fit-content; margin:0 auto; }
+
+/* ===== PLAYER CARD ===== */
+.player-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:22px; display:flex; flex-direction:column; align-items:center; gap:18px; }
+.cover { width:96px; height:96px; border-radius:var(--r); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:2.4rem; border:1px solid var(--border); overflow:hidden; flex-shrink:0; transition:all .3s; }
+.cover img { width:100%; height:100%; object-fit:cover; }
+.cover.playing { box-shadow:0 0 22px var(--accent-glow); border-color:var(--accent); }
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinning { animation:spin 2s linear infinite; }
+.sinfo { text-align:center; }
+.stitle { font-family:var(--font-d); font-size:1.05rem; font-weight:700; margin-bottom:3px; }
+.sartist { color:var(--fg-muted); font-size:.88rem; }
+.blurred { filter:blur(7px); pointer-events:none; user-select:none; }
+.prog-wrap { width:100%; display:flex; flex-direction:column; gap:5px; align-items:center; }
+.prog-bg { width:100%; height:5px; background:var(--surface2); border-radius:99px; overflow:hidden; border:1px solid var(--border); }
+.prog-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent-bright)); border-radius:99px; transition:width .45s linear; }
+.prog-time { font-variant-numeric:tabular-nums; font-size:.74rem; color:var(--fg-muted); }
+.pcontrols { display:flex; gap:9px; flex-wrap:wrap; justify-content:center; }
+
+/* ===== ROUND DOTS ===== */
+.round-dots { display:flex; justify-content:center; gap:6px; flex-wrap:wrap; }
+.rdot { width:7px; height:7px; border-radius:50%; background:var(--border); transition:background .2s; }
+.rdot.done { background:var(--accent-bright); }
+.rdot.cur { background:var(--fg); }
+
+/* ===== ANSWER (modo Original) ===== */
+.ans-section { display:flex; flex-direction:column; gap:10px; }
+.ans-lbl { font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:var(--fg-muted); }
+.ans-opt {
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-sm);
+  padding:11px 15px; cursor:pointer; font-size:.92rem; transition:all .14s;
+  text-align:left; color:var(--fg); width:100%;
+}
+.ans-opt:hover { border-color:var(--accent); background:var(--surface); }
+.ans-opt.correct { border-color:var(--good)!important; background:rgba(34,197,94,.12)!important; color:var(--good); }
+.ans-opt.wrong { border-color:var(--bad)!important; background:rgba(239,68,68,.1)!important; color:var(--bad); }
+.ans-opt:disabled { cursor:default; }
+.ans-free { display:flex; gap:8px; }
+.ans-free input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-sm); padding:9px 13px; color:var(--fg); font-size:.92rem; outline:none; transition:border .15s; }
+.ans-free input:focus { border-color:var(--accent); }
+
+/* ===== RESULT ===== */
+.result-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:20px 22px; text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center; }
+.res-emoji { font-size:2.4rem; }
+.res-text { font-family:var(--font-d); font-size:1rem; font-weight:600; }
+.res-pts { font-size:.88rem; color:var(--fg-muted); }
+
+/* ===== GENERACIONES — TIMELINE ===== */
+.timeline-area { display:flex; flex-direction:column; gap:14px; }
+.timeline-instr { font-size:.84rem; color:var(--fg-muted); text-align:center; line-height:1.4; }
+.era-tags { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:4px; }
+.era-tag { padding:3px 10px; border-radius:99px; font-size:.72rem; font-weight:700; border:1px solid; }
+.era-vinyl { background:rgba(217,119,6,.15); border-color:var(--era-vinyl); color:var(--era-vinyl); }
+.era-cd    { background:rgba(37,99,235,.15);  border-color:var(--era-cd);    color:var(--era-cd); }
+.era-stream{ background:rgba(124,58,237,.15); border-color:var(--era-stream);color:var(--era-stream); }
+
+/* la línea horizontal del tiempo */
+.timeline {
+  position:relative; display:flex; align-items:center; gap:0;
+  background:var(--surface2); border:1px solid var(--border); border-radius:var(--r);
+  padding:14px 16px; min-height:80px; overflow:hidden;
+  user-select:none;
+}
+.timeline-line { position:absolute; left:16px; right:16px; top:50%; height:2px; background:var(--border2); transform:translateY(-50%); pointer-events:none; }
+.tl-slots { display:flex; align-items:center; gap:0; width:100%; position:relative; z-index:1; flex-wrap:nowrap; overflow-x:auto; }
+.tl-card {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:var(--surface3); border:1px solid var(--border2); border-radius:var(--r-sm);
+  padding:7px 10px; cursor:grab; min-width:80px; max-width:90px; font-size:.72rem;
+  transition:border-color .15s, box-shadow .15s;
+  flex-shrink:0;
+}
+.tl-card.era-vinyl-card { border-color:var(--era-vinyl); }
+.tl-card.era-cd-card    { border-color:var(--era-cd); }
+.tl-card.era-stream-card{ border-color:var(--era-stream); }
+.tl-card .tl-year { font-family:var(--font-d); font-weight:700; font-size:.82rem; font-variant-numeric:tabular-nums; }
+.tl-card .tl-song { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:78px; text-align:center; }
+.tl-card .tl-art  { color:var(--fg-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:78px; text-align:center; }
+.tl-card.new-song { background:var(--surface); border-color:var(--accent); box-shadow:0 0 12px var(--accent-glow); cursor:default; }
+.tl-card.new-song .tl-year { color:var(--accent-bright); }
+.tl-insert { display:flex; align-items:center; justify-content:center; width:36px; flex-shrink:0; }
+.tl-insert-btn {
+  width:28px; height:28px; border-radius:50%; border:2px dashed var(--border2);
+  background:var(--surface); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .15s; color:var(--fg-muted); font-size:.9rem; flex-shrink:0;
+}
+.tl-insert-btn:hover { border-color:var(--accent); color:var(--accent-bright); background:var(--surface2); }
+.tl-insert-btn.selected { border-color:var(--accent); background:var(--accent); color:#fff; border-style:solid; }
+
+/* año revelado vs oculto */
+.year-hidden { filter:blur(5px); }
+
+/* gen buttons */
+.gen-actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+
+/* ===== BINGO ===== */
+.bingo-area { display:flex; flex-direction:column; gap:14px; }
+.bingo-instr { font-size:.84rem; color:var(--fg-muted); text-align:center; line-height:1.4; }
+.bingo-boards { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.bingo-board { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:14px; }
+.bingo-team-name { font-family:var(--font-d); font-weight:700; font-size:.9rem; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.bingo-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+.bingo-cell {
+  aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+  font-size:.62rem; text-align:center; padding:3px; line-height:1.2; cursor:pointer;
+  transition:all .18s; overflow:hidden; position:relative;
+}
+.bingo-cell .bc-song { font-weight:600; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.bingo-cell .bc-art  { color:var(--fg-muted); display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; font-size:.58rem; }
+.bingo-cell.marked {
+  background:var(--accent); border-color:var(--accent-bright);
+  box-shadow:0 0 10px var(--accent-glow);
+}
+.bingo-cell.marked .bc-song,
+.bingo-cell.marked .bc-art { color:#fff; }
+.bingo-cell.free-cell { background:var(--surface3); border-style:dashed; cursor:default; font-size:.8rem; }
+.bingo-cell.winner-line { background:var(--good)!important; border-color:#15803d!important; box-shadow:0 0 12px rgba(34,197,94,.4)!important; }
+.bingo-cell.winner-line .bc-song,
+.bingo-cell.winner-line .bc-art { color:#fff; }
+
+/* calls log */
+.calls-log { display:flex; flex-direction:column; gap:6px; max-height:140px; overflow-y:auto; }
+.call-entry { display:flex; align-items:center; gap:10px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-sm); padding:8px 12px; font-size:.84rem; }
+.call-cover { width:32px; height:32px; border-radius:5px; object-fit:cover; background:var(--surface3); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:.9rem; overflow:hidden; }
+.call-cover img { width:100%; height:100%; object-fit:cover; }
+.call-info { flex:1; min-width:0; }
+.call-title { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.call-artist { color:var(--fg-muted); font-size:.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.call-num { font-family:var(--font-d); font-weight:700; color:var(--fg-dim); font-size:.82rem; flex-shrink:0; }
+
+/* bingo winner announcement */
+.bingo-win { background:var(--surface2); border:2px solid var(--good); border-radius:var(--r); padding:16px; text-align:center; animation:fi .3s ease; }
+.bingo-win-title { font-family:var(--font-d); font-weight:800; font-size:1.2rem; color:var(--good); }
+
+/* ===== WINNER SCREEN ===== */
+#winner-screen { align-items:center; text-align:center; justify-content:center; gap:24px; }
+.win-title { font-family:var(--font-d); font-size:1.8rem; font-weight:700; }
+.win-name { font-size:2.2rem; font-weight:800; background:linear-gradient(135deg,var(--accent),var(--accent-bright)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+.final-scores { display:flex; flex-direction:column; gap:7px; width:100%; max-width:340px; }
+.final-row { display:flex; justify-content:space-between; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm); padding:11px 15px; }
+.final-row.win-row { border-color:var(--accent); background:var(--surface2); }
+
+/* ===== CONFETTI ===== */
+.confetti-wrap { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:200; }
+.cp { position:absolute; border-radius:2px; animation:cf linear forwards; }
+@keyframes cf { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(110vh) rotate(720deg);opacity:0} }
+
+/* ===== AUTH NOTICE ===== */
+.auth-notice { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r); padding:14px 18px; font-size:.84rem; color:var(--fg-muted); text-align:center; line-height:1.55; }
+</style>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+    <div class="logo">🎵 <span class="hl">Sound</span><span class="dim">Hipster</span></div>
+    <div id="game-mode-badge" class="mode-badge hidden"></div>
+  </div>
+
+  <!-- ===================== SETUP ===================== -->
+  <div id="setup-screen" class="screen fade-in">
+
+    <!-- selector de modo -->
+    <div>
+      <div class="label" style="margin-bottom:10px;">Elige el modo de juego</div>
+      <div class="mode-tabs">
+        <div class="mode-tab active" id="tab-original" onclick="selectGameMode('original')">
+          <div class="mode-icon">🎵</div>
+          <div class="mode-name">Original</div>
+          <div class="mode-desc">Adivina la canción y el artista</div>
+        </div>
+        <div class="mode-tab" id="tab-generaciones" onclick="selectGameMode('generaciones')">
+          <div class="mode-icon">🕰️</div>
+          <div class="mode-name">Generaciones</div>
+          <div class="mode-desc">Ordena las canciones en la línea del tiempo</div>
+        </div>
+        <div class="mode-tab" id="tab-bingo" onclick="selectGameMode('bingo')">
+          <div class="mode-icon">🎯</div>
+          <div class="mode-name">Bingo</div>
+          <div class="mode-desc">Tacha canciones en tu cartón</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- config común -->
+    <div class="card">
+      <h2>Equipos</h2>
+      <div class="field">
+        <div class="label">Número de equipos</div>
+        <div class="stepper">
+          <button onclick="chTeams(-1)">−</button>
+          <div class="sv" id="team-count-val">3</div>
+          <button onclick="chTeams(1)">+</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Nombre de los equipos</div>
+        <div class="teams-grid" id="teams-grid"></div>
+      </div>
+    </div>
+
+    <!-- config original / generaciones -->
+    <div class="card" id="cfg-original">
+      <h2>Configuración</h2>
+      <div class="field">
+        <div class="label">Rondas por equipo</div>
+        <div class="range-wrap">
+          <input type="range" min="3" max="15" value="5" id="rounds-range" oninput="document.getElementById('rounds-val').textContent=this.value">
+          <div class="rval" id="rounds-val">5</div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Duración del fragmento</div>
+        <div class="range-wrap">
+          <input type="range" min="10" max="30" value="20" step="5" id="dur-range" oninput="document.getElementById('dur-val').textContent=this.value+'s'">
+          <div class="rval" id="dur-val">20s</div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="field">
+        <div class="label">Géneros</div>
+        <div class="chips" id="genre-chips">
+          <div class="chip active" data-g="pop">Pop</div>
+          <div class="chip active" data-g="rock">Rock</div>
+          <div class="chip active" data-g="hip hop">Hip-hop</div>
+          <div class="chip active" data-g="electronic dance">Electrónica</div>
+          <div class="chip active" data-g="reggaeton">Reggaeton</div>
+          <div class="chip active" data-g="latin pop">Latino</div>
+          <div class="chip active" data-g="80s hits">80s</div>
+          <div class="chip active" data-g="90s hits">90s</div>
+          <div class="chip active" data-g="2000s hits">2000s</div>
+          <div class="chip active" data-g="rnb soul">R&B / Soul</div>
+          <div class="chip active" data-g="indie alternative">Indie</div>
+          <div class="chip active" data-g="dance pop">Dance</div>
+          <div class="chip" data-g="flamenco">Flamenco</div>
+          <div class="chip" data-g="jazz blues">Jazz</div>
+          <div class="chip" data-g="classical music">Clásica</div>
+          <div class="chip" data-g="metal rock">Metal</div>
+          <div class="chip" data-g="country music">Country</div>
+          <div class="chip" data-g="kpop">K-pop</div>
+        </div>
+      </div>
+      <div class="field" id="cfg-answer-mode">
+        <div class="label">Modo de respuesta</div>
+        <div class="chips">
+          <div class="chip active" id="mode-multi" onclick="setAnsMode('multi')">Opciones múltiples</div>
+          <div class="chip" id="mode-free" onclick="setAnsMode('free')">Texto libre</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- config bingo -->
+    <div class="card hidden" id="cfg-bingo">
+      <h2>Configuración Bingo</h2>
+      <div class="field">
+        <div class="label">Canciones por cartón (5×5 = 25)</div>
+        <div style="font-size:.84rem;color:var(--fg-muted);">Cada equipo tendrá un cartón 5×5. La casilla central es libre. El presentador va cantando canciones y los equipos marcan las que aparecen en su cartón.</div>
+      </div>
+      <div class="field">
+        <div class="label">Duración del fragmento</div>
+        <div class="range-wrap">
+          <input type="range" min="10" max="30" value="15" step="5" id="bingo-dur-range" oninput="document.getElementById('bingo-dur-val').textContent=this.value+'s'">
+          <div class="rval" id="bingo-dur-val">15s</div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Géneros</div>
+        <div class="chips" id="bingo-genre-chips">
+          <div class="chip active" data-g="pop">Pop</div>
+          <div class="chip active" data-g="rock">Rock</div>
+          <div class="chip active" data-g="hip hop">Hip-hop</div>
+          <div class="chip active" data-g="electronic dance">Electrónica</div>
+          <div class="chip active" data-g="reggaeton">Reggaeton</div>
+          <div class="chip active" data-g="latin pop">Latino</div>
+          <div class="chip active" data-g="80s hits">80s</div>
+          <div class="chip active" data-g="90s hits">90s</div>
+          <div class="chip active" data-g="2000s hits">2000s</div>
+          <div class="chip active" data-g="rnb soul">R&B / Soul</div>
+          <div class="chip active" data-g="indie alternative">Indie</div>
+          <div class="chip active" data-g="dance pop">Dance</div>
+          <div class="chip" data-g="flamenco">Flamenco</div>
+          <div class="chip" data-g="jazz blues">Jazz</div>
+          <div class="chip" data-g="country music">Country</div>
+          <div class="chip" data-g="kpop">K-pop</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-notice">
+      🎵 Las canciones se obtienen de la API de iTunes — previews reales de hasta 30s, sin necesidad de cuenta.
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="startGame()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+      Comenzar partida
+    </button>
+  </div>
+
+  <!-- ===================== ORIGINAL / GENERACIONES GAME ===================== -->
+  <div id="game-screen" class="screen hidden">
+    <div class="scoreboard" id="scoreboard"></div>
+    <div class="round-dots" id="round-dots"></div>
+    <div class="turn-hdr">
+      <div class="turn-lbl">Turno de</div>
+      <div class="turn-nm" id="turn-nm"></div>
+    </div>
+
+    <!-- player -->
+    <div class="player-card">
+      <div class="cover" id="cover">🎵</div>
+      <div class="sinfo blurred" id="sinfo">
+        <div class="stitle" id="stitle">—</div>
+        <div class="sartist" id="sartist">—</div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" id="pfill"></div></div>
+        <div class="prog-time" id="ptime">0s</div>
+      </div>
+      <div class="pcontrols" id="pcontrols">
+        <button class="btn btn-primary" id="btn-play" onclick="playFrag()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          Reproducir fragmento
+        </button>
+        <button class="btn btn-ghost btn-sm" id="btn-replay" onclick="replayFrag()" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.9"/></svg>
+          Repetir (−1pt)
+        </button>
+      </div>
+    </div>
+
+    <!-- ORIGINAL: respuesta -->
+    <div class="ans-section hidden" id="ans-section">
+      <div class="ans-lbl" id="ans-lbl">¿Cómo se llama esta canción?</div>
+      <div id="ans-opts"></div>
+      <div class="ans-free hidden" id="ans-free">
+        <input type="text" id="ans-input" placeholder="Escribe el título..." onkeydown="if(event.key==='Enter')submitFree()">
+        <button class="btn btn-primary btn-sm" onclick="submitFree()">OK</button>
+      </div>
+    </div>
+
+    <!-- GENERACIONES: timeline -->
+    <div class="timeline-area hidden" id="gen-section">
+      <div class="era-tags">
+        <div class="era-tag era-vinyl">🎷 Vinilo (≤1984)</div>
+        <div class="era-tag era-cd">💿 Casete/CD (1985–2004)</div>
+        <div class="era-tag era-stream">📱 Streaming (2005–hoy)</div>
+      </div>
+      <div class="timeline-instr" id="gen-instr">Escucha la canción y elige su posición en la línea del tiempo ↓</div>
+      <div class="timeline" id="timeline">
+        <div class="timeline-line"></div>
+        <div class="tl-slots" id="tl-slots"></div>
+      </div>
+      <div class="gen-actions" id="gen-actions">
+        <button class="btn btn-primary hidden" id="btn-gen-confirm" onclick="confirmGenPlacement()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6L9 17l-5-5"/></svg>
+          Confirmar posición
+        </button>
+      </div>
+    </div>
+
+    <!-- resultado del turno -->
+    <div class="result-card hidden" id="result-card">
+      <div class="res-emoji" id="res-emoji">✅</div>
+      <div class="res-text" id="res-text"></div>
+      <div class="res-pts" id="res-pts"></div>
+      <button class="btn btn-primary" onclick="nextTurn()">Siguiente turno →</button>
+    </div>
+  </div>
+
+  <!-- ===================== BINGO GAME ===================== -->
+  <div id="bingo-screen" class="screen hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div class="label">🎯 Bingo Musical</div>
+      <div id="bingo-call-count" style="font-family:var(--font-d);font-size:.82rem;color:var(--fg-muted);"></div>
+    </div>
+
+    <!-- llamadas anteriores -->
+    <div class="card" style="padding:14px;">
+      <div class="label" style="margin-bottom:8px;">Canciones cantadas</div>
+      <div class="calls-log" id="calls-log"><div style="color:var(--fg-dim);font-size:.82rem;text-align:center;padding:8px;">Aún no se ha cantado ninguna canción</div></div>
+    </div>
+
+    <!-- player del bingo -->
+    <div class="player-card" id="bingo-player">
+      <div class="cover" id="bingo-cover">🎵</div>
+      <div class="sinfo blurred" id="bingo-sinfo">
+        <div class="stitle" id="bingo-stitle">—</div>
+        <div class="sartist" id="bingo-sartist">—</div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" id="bingo-pfill"></div></div>
+        <div class="prog-time" id="bingo-ptime">0s</div>
+      </div>
+      <div class="pcontrols" id="bingo-pcontrols">
+        <button class="btn btn-primary" id="bingo-btn-play" onclick="bingoCantarCancion()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+          Cantar siguiente canción
+        </button>
+      </div>
+    </div>
+
+    <!-- anuncio de bingo -->
+    <div class="bingo-win hidden" id="bingo-win-announce">
+      <div style="font-size:2rem;">🎉</div>
+      <div class="bingo-win-title" id="bingo-win-title">¡BINGO!</div>
+      <div id="bingo-win-sub" style="font-size:.88rem;color:var(--fg-muted);margin-top:4px;"></div>
+    </div>
+
+    <!-- cartones -->
+    <div>
+      <div class="label" style="margin-bottom:10px;">Cartones de los equipos</div>
+      <div class="bingo-boards" id="bingo-boards"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="showSetup()">← Volver</button>
+      <button class="btn btn-primary" onclick="startGame()">Nueva partida</button>
+    </div>
+  </div>
+
+  <!-- ===================== WINNER ===================== -->
+  <div id="winner-screen" class="screen hidden fade-in">
+    <div style="font-size:2.8rem;text-align:center;">🏆</div>
+    <div class="win-title" style="text-align:center;">¡Ganador!</div>
+    <div class="win-name" id="win-name" style="text-align:center;"></div>
+    <div class="final-scores" id="final-scores"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn btn-primary" onclick="startGame()">Nueva partida</button>
+      <button class="btn btn-ghost" onclick="showSetup()">Configurar</button>
+    </div>
+  </div>
+
+</div>
+<div class="confetti-wrap" id="confetti"></div>
+
+<script>
+// ======================================================
+// CONSTANTES
+// ======================================================
+const COLORS = ['#7c3aed','#2563eb','#16a34a','#d97706','#dc2626','#db2777','#0891b2','#65a30d'];
+const DNAMES = ['Equipo Alfa','Equipo Beta','Equipo Gamma','Equipo Delta','Equipo Épsilon','Equipo Zeta','Equipo Eta','Equipo Theta'];
+
+// ======================================================
+// CONFIG Y ESTADO
+// ======================================================
+let cfg = {
+  gameMode: 'original',   // 'original' | 'generaciones' | 'bingo'
+  numTeams: 3,
+  rounds: 5,
+  duration: 20,
+  genres: ['pop','rock','hip hop','electronic'],
+  ansMode: 'multi'
+};
+
+let G = {
+  teams: [],
+  songs: [],
+  songIdx: 0,
+  currentTeam: 0,
+  totalTurns: 0,
+  maxTurns: 0,
+  curSong: null,
+  canReplay: true,
+  audio: null,
+  progIv: null,
+  phase: 'setup',
+  // generaciones
+  timeline: [],      // canciones ya colocadas con año conocido
+  genSelectedSlot: null,
+  // bingo
+  bingoBoards: [],   // [{team, cells:[{song,marked}], winner:false}]
+  bingoCalls: [],    // canciones ya cantadas
+  bingoSongPool: []  // pool completo para el bingo
+};
+
+// ======================================================
+// INIT
+// ======================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderTeamInputs();
+  initChips('genre-chips');
+  initChips('bingo-genre-chips');
+});
+
+function selectGameMode(m) {
+  cfg.gameMode = m;
+  ['original','generaciones','bingo'].forEach(x => {
+    document.getElementById('tab-'+x).classList.toggle('active', x===m);
+  });
+  document.getElementById('cfg-original').classList.toggle('hidden', m==='bingo');
+  document.getElementById('cfg-bingo').classList.toggle('hidden', m!=='bingo');
+  document.getElementById('cfg-answer-mode').classList.toggle('hidden', m!=='original');
+}
+
+function renderTeamInputs() {
+  const g = document.getElementById('teams-grid');
+  g.innerHTML = '';
+  for (let i=0;i<cfg.numTeams;i++) {
+    const n = G.teams[i]?.name || DNAMES[i];
+    g.innerHTML += `<div class="team-wrap"><div class="dot" style="background:${COLORS[i]}"></div><input type="text" value="${n}" id="tn-${i}" maxlength="20"></div>`;
+  }
+}
+
+function chTeams(d) {
+  cfg.numTeams = Math.max(2, Math.min(8, cfg.numTeams+d));
+  document.getElementById('team-count-val').textContent = cfg.numTeams;
+  renderTeamInputs();
+}
+
+function initChips(containerId) {
+  document.querySelectorAll(`#${containerId} .chip`).forEach(c => {
+    c.addEventListener('click', () => {
+      c.classList.toggle('active');
+    });
+  });
+}
+
+function getActiveGenres(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .chip.active`)].map(c=>c.dataset.g);
+}
+
+function setAnsMode(m) {
+  cfg.ansMode = m;
+  document.getElementById('mode-multi').classList.toggle('active', m==='multi');
+  document.getElementById('mode-free').classList.toggle('active', m==='free');
+}
+
+// ======================================================
+// START GAME
+// ======================================================
+async function startGame() {
+  cfg.rounds = parseInt(document.getElementById('rounds-range').value);
+  cfg.duration = parseInt(document.getElementById('dur-range').value);
+  cfg.genres = getActiveGenres('genre-chips');
+  if (!cfg.genres.length) cfg.genres = ['pop'];
+
+  G.teams = [];
+  for (let i=0;i<cfg.numTeams;i++) {
+    const n = document.getElementById(`tn-${i}`)?.value.trim() || DNAMES[i];
+    G.teams.push({name:n, score:0, color:COLORS[i]});
+  }
+
+  G.currentTeam = 0;
+  G.totalTurns = 0;
+  G.maxTurns = cfg.numTeams * cfg.rounds;
+  G.songIdx = 0;
+  G.songs = [];
+  G.phase = 'playing';
+  G.timeline = [];
+  G.genSelectedSlot = null;
+
+  hideAll();
+
+  if (cfg.gameMode === 'bingo') {
+    await startBingo();
+    return;
+  }
+
+  document.getElementById('game-screen').classList.remove('hidden');
+  document.getElementById('game-mode-badge').classList.remove('hidden');
+  document.getElementById('game-mode-badge').innerHTML = cfg.gameMode==='generaciones'
+    ? '🕰️ Batalla de Generaciones'
+    : '🎵 Original';
+
+  renderScoreboard();
+  renderRoundDots();
+
+  setBtnPlay('⏳ Cargando canciones...');
+  document.getElementById('btn-play').disabled = true;
+  G.songs = await fetchSongs(cfg.genres, G.maxTurns + 15);
+  if (!G.songs.length) {
+    setBtnPlay('❌ Error cargando — reintentar');
+    document.getElementById('btn-play').disabled = false;
+    document.getElementById('btn-play').onclick = startGame;
+    return;
+  }
+  setBtnPlay('▶ Reproducir fragmento');
+  document.getElementById('btn-play').disabled = false;
+  document.getElementById('btn-play').onclick = playFrag;
+
+  beginTurn();
+}
+
+// ======================================================
+// FETCH SONGS — Deezer API (CORS abierto, previews de 30s sin restricciones)
+// ======================================================
+async function fetchSongs(genres, needed) {
+  needed = needed || (G.maxTurns + 10);
+
+  const baseTerms = [
+    'top hits', 'greatest hits', 'best songs ever', 'classic hits',
+    'pop hits 2000s', 'pop hits 2010s', 'pop hits 1990s', 'pop hits 1980s',
+    'rock anthems', 'dance hits', 'party songs', 'summer hits',
+    'one hit wonders', 'number one hits', 'radio hits',
+    'hip hop classics', 'rap hits', 'rnb hits', 'soul classics',
+    'indie hits', 'alternative hits', 'britpop', 'grunge hits',
+    'edm hits', 'house music', 'techno', 'trance hits',
+    'latin hits', 'reggaeton hits', 'salsa', 'bachata',
+    'pop español', 'musica española', 'flamenco pop',
+    'jazz standards', 'blues classics', 'country hits',
+    'k-pop hits', 'movie soundtracks', 'billboard hot 100'
+  ];
+
+  const terms = [];
+  genres.forEach(g => {
+    terms.push(g);
+    terms.push(`${g} hits`);
+    terms.push(`best ${g}`);
+  });
+  const shuffledBase = [...baseTerms].sort(() => Math.random() - 0.5);
+  terms.push(...shuffledBase);
+
+  const fetched = [];
+  let i = 0;
+  while (fetched.length < needed && i < terms.length) {
+    try {
+      // Deezer API — CORS completamente abierto, previews de 30s sin auth
+      const idx = Math.floor(Math.random() * 80); // índice aleatorio para variedad
+      const url = `https://api.deezer.com/search?q=${encodeURIComponent(terms[i])}&limit=25&index=${idx}&output=json`;
+      const r = await fetch(url);
+      if (r.ok) {
+        const d = await r.json();
+        const results = (d.data || []).sort(() => Math.random() - 0.5);
+        for (const t of results) {
+          if (t.preview && !fetched.find(f => f.id === t.id)) {
+            fetched.push({
+              id: t.id,
+              title: t.title,
+              artist: t.artist?.name || '',
+              album: t.album?.title || '',
+              cover: t.album?.cover_medium || t.album?.cover || '',
+              preview: t.preview,  // URL directa MP3, sin restricciones CORS
+              year: null  // Deezer no devuelve año en search, lo enriquecemos si hace falta
+            });
+          }
+        }
+      }
+    } catch(e) {}
+    i++;
+  }
+  shuffle(fetched);
+  return fetched;
+}
+
+function shuffle(a) {
+  for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// ======================================================
+// TURN LOGIC
+// ======================================================
+function beginTurn() {
+  G.canReplay = true;
+  stopAudio();
+
+  const t = G.teams[G.currentTeam];
+  document.getElementById('turn-nm').textContent = t.name;
+  document.getElementById('turn-nm').style.color = t.color;
+  document.querySelectorAll('.team-row').forEach((r,i)=>r.classList.toggle('active-team',i===G.currentTeam));
+
+  // reset player
+  const cov = document.getElementById('cover');
+  cov.innerHTML='🎵'; cov.className='cover';
+  document.getElementById('sinfo').classList.add('blurred');
+  document.getElementById('pfill').style.width='0%';
+  document.getElementById('ptime').textContent=`0s / ${cfg.duration}s`;
+  document.getElementById('btn-play').disabled=false;
+  document.getElementById('btn-replay').disabled=true;
+  document.getElementById('btn-replay').innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.9"/></svg> Repetir (−1pt)`;
+  document.getElementById('pcontrols').style.display='flex';
+  document.getElementById('ans-section').classList.add('hidden');
+  document.getElementById('gen-section').classList.add('hidden');
+  document.getElementById('result-card').classList.add('hidden');
+
+  if (G.songIdx >= G.songs.length) G.songIdx=0;
+  G.curSong = G.songs[G.songIdx++] || null;
+
+  renderRoundDots();
+}
+
+// ======================================================
+// AUDIO
+// ======================================================
+function playFrag() {
+  if (!G.curSong) return;
+  document.getElementById('btn-play').disabled=true;
+  document.getElementById('btn-replay').disabled=false;
+  _play(cfg.duration, 'cover', 'pfill', 'ptime', () => showAnswerSection());
+}
+
+function replayFrag() {
+  G.canReplay = false;
+  const b = document.getElementById('btn-replay');
+  b.disabled=true; b.textContent='Ya repetido';
+  stopAudio();
+  _play(cfg.duration, 'cover', 'pfill', 'ptime', () => showAnswerSection());
+}
+
+function _play(maxSec, covId, fillId, timeId, onDone) {
+  stopAudio();
+  const audio = new Audio();
+  G.audio = audio;
+
+  const cov=document.getElementById(covId), fill=document.getElementById(fillId), tEl=document.getElementById(timeId);
+
+  cov.classList.add('playing','spinning');
+  fill.style.width='0%';
+  tEl.textContent=`0s / ${maxSec}s`;
+
+  audio.src = G.curSong.preview;
+
+  G.progIv = setInterval(()=>{
+    const e=audio.currentTime, p=Math.min(100,(e/maxSec)*100);
+    fill.style.width=p+'%'; tEl.textContent=`${Math.floor(e)}s / ${maxSec}s`;
+    if (e>=maxSec) { stopAudio(); cov.classList.remove('spinning','playing'); onDone(); }
+  }, 300);
+
+  audio.play().catch(err => {
+    console.warn('Audio error:', err);
+    clearInterval(G.progIv);
+    cov.classList.remove('spinning','playing');
+    skipToNext(cov, tEl);
+  });
+
+  audio.onended=()=>{
+    clearInterval(G.progIv); cov.classList.remove('spinning','playing');
+    fill.style.width='100%'; onDone();
+  };
+}
+
+function skipToNext(cov, tEl) {
+  // Buscar la siguiente canción con preview disponible
+  let next = null;
+  while (G.songIdx < G.songs.length) {
+    const s = G.songs[G.songIdx++];
+    if (s && s.preview) { next = s; break; }
+  }
+  if (next) {
+    G.curSong = next;
+    if (cov) cov.innerHTML = '🎵';
+    if (tEl) tEl.textContent = 'Canción no disponible — pulsa ▶ para la siguiente';
+    const btnPlay = document.getElementById('btn-play') || document.getElementById('bingo-btn-play');
+    if (btnPlay) { btnPlay.disabled = false; }
+    const btnReplay = document.getElementById('btn-replay');
+    if (btnReplay) btnReplay.disabled = true;
+  }
+}
+
+function stopAudio() {
+  if (G.audio) { G.audio.pause(); G.audio.src=''; G.audio=null; }
+  if (G.progIv) { clearInterval(G.progIv); G.progIv=null; }
+}
+
+// ======================================================
+// ANSWER SECTION — ORIGINAL
+// ======================================================
+function showAnswerSection() {
+  document.getElementById('pcontrols').style.display='none';
+  // revelar portada
+  const cov=document.getElementById('cover');
+  if (G.curSong.cover) cov.innerHTML=`<img src="${G.curSong.cover}" alt="">`;
+
+  if (cfg.gameMode==='generaciones') {
+    showGenSection();
+    return;
+  }
+
+  const sec=document.getElementById('ans-section'); sec.classList.remove('hidden');
+  if (cfg.ansMode==='multi') {
+    document.getElementById('ans-free').classList.add('hidden');
+    const correct=G.curSong.title;
+    const dis=G.songs.filter(s=>s.id!==G.curSong.id).map(s=>s.title).filter((v,i,a)=>a.indexOf(v)===i).sort(()=>Math.random()-.5).slice(0,3);
+    const opts=[...dis,correct].sort(()=>Math.random()-.5);
+    const w=document.getElementById('ans-opts'); w.innerHTML='';
+    opts.forEach(o=>{
+      const b=document.createElement('button'); b.className='ans-opt'; b.textContent=o;
+      b.onclick=()=>checkAns(o,correct,b); w.appendChild(b);
+    });
+  } else {
+    document.getElementById('ans-opts').innerHTML='';
+    document.getElementById('ans-free').classList.remove('hidden');
+    document.getElementById('ans-input').value='';
+    setTimeout(()=>document.getElementById('ans-input').focus(),80);
+  }
+}
+
+function submitFree() {
+  const v=document.getElementById('ans-input').value.trim(); if(!v) return;
+  const ok=norm(v)===norm(G.curSong.title)||norm(G.curSong.title).includes(norm(v))||norm(v).includes(norm(G.curSong.title).split(' ')[0]);
+  revealSong(); revealResult(ok);
+}
+
+function checkAns(sel,correct,el) {
+  document.querySelectorAll('.ans-opt').forEach(b=>b.disabled=true);
+  const ok=sel===correct;
+  el.classList.add(ok?'correct':'wrong');
+  if (!ok) document.querySelectorAll('.ans-opt').forEach(b=>{ if(b.textContent===correct) b.classList.add('correct'); });
+  revealSong();
+  setTimeout(()=>revealResult(ok),1100);
+}
+
+function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,'').trim(); }
+
+// ======================================================
+// GENERACIONES — TIMELINE
+// ======================================================
+function showGenSection() {
+  document.getElementById('gen-section').classList.remove('hidden');
+  document.getElementById('gen-instr').textContent = 'Escucha la canción — elige dónde colocarla en la línea del tiempo ↓';
+  document.getElementById('btn-gen-confirm').classList.add('hidden');
+  G.genSelectedSlot = null;
+  renderTimeline(true);
+}
+
+function getEraClass(year) {
+  if (!year) return 'era-stream-card';
+  if (year<=1984) return 'era-vinyl-card';
+  if (year<=2004) return 'era-cd-card';
+  return 'era-stream-card';
+}
+
+function renderTimeline(showInserts) {
+  const slots = document.getElementById('tl-slots');
+  slots.innerHTML='';
+
+  // ordenar timeline por año
+  const sorted = [...G.timeline].sort((a,b)=>(a.year||9999)-(b.year||9999));
+
+  // nueva canción a colocar (año oculto)
+  const newCard = `<div class="tl-card new-song"><div class="tl-year">?</div><div class="tl-song">${G.curSong.title}</div><div class="tl-art">${G.curSong.artist}</div></div>`;
+
+  if (sorted.length === 0) {
+    // solo la canción nueva, insert a los lados
+    if (showInserts) {
+      slots.innerHTML = `
+        ${insertBtn(0)}
+        ${newCard}
+        ${insertBtn(1)}
+      `;
+    } else {
+      slots.innerHTML = newCard;
+    }
+  } else {
+    let html = '';
+    if (showInserts) html += insertBtn(0);
+    sorted.forEach((s,i)=>{
+      html += `<div class="tl-card ${getEraClass(s.year)}">
+        <div class="tl-year" style="font-variant-numeric:tabular-nums">${s.year||'?'}</div>
+        <div class="tl-song">${s.title}</div>
+        <div class="tl-art">${s.artist}</div>
+      </div>`;
+      if (showInserts) html += insertBtn(i+1);
+    });
+    slots.innerHTML = html;
+
+    // añadir la new-song encima del slot seleccionado o al final
+    if (showInserts) {
+      document.querySelectorAll('.tl-insert-btn').forEach((b,i)=>{
+        b.onclick=()=>selectSlot(i);
+        if (i===G.genSelectedSlot) b.classList.add('selected');
+      });
+    }
+  }
+}
+
+function insertBtn(idx) {
+  return `<div class="tl-insert"><div class="tl-insert-btn" onclick="selectSlot(${idx})">+</div></div>`;
+}
+
+function selectSlot(idx) {
+  G.genSelectedSlot = idx;
+  document.querySelectorAll('.tl-insert-btn').forEach((b,i)=>b.classList.toggle('selected',i===idx));
+  document.getElementById('btn-gen-confirm').classList.remove('hidden');
+}
+
+function confirmGenPlacement() {
+  if (G.genSelectedSlot === null) return;
+  const year = G.curSong.year;
+  const sorted = [...G.timeline].sort((a,b)=>(a.year||9999)-(b.year||9999));
+
+  let isCorrect = false;
+
+  if (year) {
+    // calcular si el slot elegido es correcto
+    const before = sorted[G.genSelectedSlot-1]?.year || 0;
+    const after  = sorted[G.genSelectedSlot]?.year  || 9999;
+    isCorrect = year>=before && year<=after;
+  } else {
+    // sin año: damos el punto si están en la era correcta (casette/cd/streaming)
+    isCorrect = true;
+  }
+
+  // añadir a la timeline
+  G.timeline.push({ ...G.curSong });
+
+  revealSong();
+  // mostrar año en la canción nueva
+  document.getElementById('gen-section').classList.add('hidden');
+  revealGenResult(isCorrect, year);
+}
+
+function revealGenResult(ok, year) {
+  const team=G.teams[G.currentTeam];
+  let pts=0;
+  if (ok) { pts=G.canReplay?2:1; team.score+=pts; renderScoreboard(); }
+
+  const card=document.getElementById('result-card');
+  card.classList.remove('hidden'); card.classList.add('fade-in');
+  document.getElementById('res-emoji').textContent = ok?(pts===2?'🎯':'✅'):'❌';
+
+  const yearTxt = year ? ` (${year})` : '';
+  document.getElementById('res-text').textContent = ok
+    ? `¡Correcto! ${G.curSong.title}${yearTxt} – ${G.curSong.artist}`
+    : `Incorrecto. ${G.curSong.title}${yearTxt} – ${G.curSong.artist}`;
+  document.getElementById('res-pts').textContent = ok
+    ? `+${pts} punto${pts>1?'s':''} para ${team.name}`
+    : 'Sin puntos esta vez';
+}
+
+// ======================================================
+// RESULT
+// ======================================================
+function revealSong() {
+  document.getElementById('stitle').textContent=G.curSong.title;
+  document.getElementById('sartist').textContent=G.curSong.artist;
+  document.getElementById('sinfo').classList.remove('blurred');
+}
+
+function revealResult(ok) {
+  revealSong();
+  const team=G.teams[G.currentTeam];
+  let pts=0;
+  if (ok) { pts=G.canReplay?2:1; team.score+=pts; renderScoreboard(); }
+
+  document.getElementById('ans-section').classList.add('hidden');
+  const c=document.getElementById('result-card'); c.classList.remove('hidden'); c.classList.add('fade-in');
+  document.getElementById('res-emoji').textContent=ok?(pts===2?'🎯':'✅'):'❌';
+  document.getElementById('res-text').textContent=ok
+    ?`¡Correcto! ${G.curSong.title} – ${G.curSong.artist}`
+    :`Incorrecto. Era: ${G.curSong.title} – ${G.curSong.artist}`;
+  document.getElementById('res-pts').textContent=ok?`+${pts} punto${pts>1?'s':''} para ${team.name}`:'Sin puntos esta vez';
+}
+
+function nextTurn() {
+  G.totalTurns++;
+  if (G.totalTurns>=G.maxTurns) { endGame(); return; }
+  G.currentTeam=(G.currentTeam+1)%cfg.numTeams;
+  beginTurn();
+}
+
+function endGame() {
+  stopAudio();
+  G.phase='done';
+  hideAll();
+  document.getElementById('winner-screen').classList.remove('hidden');
+
+  const sorted=[...G.teams].sort((a,b)=>b.score-a.score);
+  document.getElementById('win-name').textContent=sorted[0].name;
+  const fs=document.getElementById('final-scores'); fs.innerHTML='';
+  sorted.forEach((t,i)=>{
+    const m=['🥇','🥈','🥉'];
+    fs.innerHTML+=`<div class="final-row ${i===0?'win-row':''}">
+      <span style="display:flex;align-items:center;gap:8px;">${m[i]||''}<span class="dot" style="background:${t.color}"></span>${t.name}</span>
+      <span style="font-family:var(--font-d);font-weight:700;color:var(--accent-bright);font-size:1.15rem;font-variant-numeric:tabular-nums">${t.score} pts</span>
+    </div>`;
+  });
+  confetti();
+}
+
+// ======================================================
+// BINGO
+// ======================================================
+async function startBingo() {
+  const bingoGenres = getActiveGenres('bingo-genre-chips');
+  if (!bingoGenres.length) bingoGenres.push('pop');
+  const bingodur = parseInt(document.getElementById('bingo-dur-range').value);
+  cfg.duration = bingodur;
+
+  document.getElementById('bingo-screen').classList.remove('hidden');
+  document.getElementById('game-mode-badge').classList.remove('hidden');
+  document.getElementById('game-mode-badge').innerHTML='🎯 Bingo Musical';
+
+  document.getElementById('bingo-btn-play').disabled=true;
+  document.getElementById('bingo-btn-play').textContent='⏳ Preparando cartones...';
+
+  // necesitamos muchas canciones: 24 * numTeams (cartón 5x5 - 1 libre) + pool extra
+  const needed = (24 * cfg.numTeams) + 30;
+  const pool = await fetchSongs(bingoGenres, needed);
+  G.bingoSongPool = pool;
+  G.bingoCalls = [];
+
+  // crear cartones
+  G.bingoBoards = [];
+  let poolIdx = 0;
+  for (let t=0; t<cfg.numTeams; t++) {
+    const cells = [];
+    for (let c=0; c<25; c++) {
+      if (c===12) { cells.push({song:null, marked:true, free:true}); continue; }
+      const song = pool[poolIdx++] || pool[0];
+      cells.push({song, marked:false, free:false});
+    }
+    G.bingoBoards.push({team:G.teams[t], cells, winner:false, winLines:[]});
+  }
+
+  // pool de canciones para cantar = todas las del cartón más extras
+  // las mezclamos aleatoriamente
+  G.bingoCalls=[];
+  G.songIdx=0; // usaremos el pool directamente
+
+  renderBingoBoards();
+  renderCallsLog();
+  document.getElementById('bingo-btn-play').disabled=false;
+  document.getElementById('bingo-btn-play').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Cantar primera canción';
+  document.getElementById('bingo-call-count').textContent='';
+}
+
+function bingoCantarCancion() {
+  // elegir siguiente canción: primero intentamos sacar de los cartones
+  // para que haya más coincidencias. Mezclamos cartones con extras.
+  let nextSong = null;
+  const allBoardSongs = G.bingoBoards.flatMap(b=>b.cells.filter(c=>!c.free&&!c.marked).map(c=>c.song));
+  const uncalled = allBoardSongs.filter(s=>!G.bingoCalls.find(c=>c.id===s.id));
+
+  if (uncalled.length > 0 && Math.random() < 0.75) {
+    // 75% de probabilidad de sacar una del cartón sin marcar
+    nextSong = uncalled[Math.floor(Math.random()*uncalled.length)];
+  } else {
+    // pool extra o repetir del pool
+    const extras = G.bingoSongPool.filter(s=>!G.bingoCalls.find(c=>c.id===s.id));
+    nextSong = extras.length > 0 ? extras[Math.floor(Math.random()*Math.min(extras.length,10))] : uncalled[0] || G.bingoSongPool[0];
+  }
+
+  if (!nextSong) { document.getElementById('bingo-btn-play').textContent='Sin más canciones'; return; }
+
+  G.curSong = nextSong;
+  G.bingoCalls.push(nextSong);
+
+  document.getElementById('bingo-call-count').textContent=`Canción #${G.bingoCalls.length}`;
+  document.getElementById('bingo-btn-play').disabled=true;
+
+  // actualizar cover del bingo
+  const cov=document.getElementById('bingo-cover');
+  cov.innerHTML='🎵'; cov.className='cover';
+  document.getElementById('bingo-sinfo').classList.add('blurred');
+  document.getElementById('bingo-pfill').style.width='0%';
+  document.getElementById('bingo-ptime').textContent=`0s / ${cfg.duration}s`;
+
+  // reproducir
+  _playBingo(cfg.duration, ()=>{
+    // revelar
+    document.getElementById('bingo-stitle').textContent=nextSong.title;
+    document.getElementById('bingo-sartist').textContent=nextSong.artist;
+    document.getElementById('bingo-sinfo').classList.remove('blurred');
+    if (nextSong.cover) document.getElementById('bingo-cover').innerHTML=`<img src="${nextSong.cover}" alt="">`;
+
+    // marcar en cartones
+    let bingoHappened=false;
+    G.bingoBoards.forEach((board,bi)=>{
+      if (board.winner) return;
+      board.cells.forEach(cell=>{
+        if (cell.song && cell.song.id===nextSong.id) cell.marked=true;
+      });
+      const won=checkBingoWin(board);
+      if (won && !board.winner) {
+        board.winner=true; board.winLines=won;
+        announceTeamBingo(board.team, bi, won);
+        bingoHappened=true;
+      }
+    });
+
+    renderBingoBoards();
+    renderCallsLog();
+    document.getElementById('bingo-btn-play').disabled=false;
+    document.getElementById('bingo-btn-play').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Siguiente canción';
+  });
+}
+
+function _playBingo(maxSec, onDone) {
+  _play(maxSec, 'bingo-cover', 'bingo-pfill', 'bingo-ptime', onDone);
+}
+
+function checkBingoWin(board) {
+  // líneas ganadoras: 5 filas, 5 columnas, 2 diagonales
+  const lines=[
+    [0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24], // filas
+    [0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24], // cols
+    [0,6,12,18,24],[4,8,12,16,20] // diag
+  ];
+  for (const line of lines) {
+    if (line.every(i=>board.cells[i].marked)) return line;
+  }
+  return null;
+}
+
+function announceTeamBingo(team, boardIdx, winLine) {
+  const ann=document.getElementById('bingo-win-announce');
+  ann.classList.remove('hidden'); ann.classList.add('fade-in');
+  document.getElementById('bingo-win-title').textContent='¡BINGO!';
+  document.getElementById('bingo-win-sub').textContent=`¡${team.name} ha completado una línea!`;
+  confetti();
+}
+
+function renderBingoBoards() {
+  const wrap=document.getElementById('bingo-boards'); wrap.innerHTML='';
+  G.bingoBoards.forEach((board,bi)=>{
+    const winCells=new Set(board.winLines||[]);
+    let cells='';
+    board.cells.forEach((cell,ci)=>{
+      const isWin=winCells.has(ci);
+      if (cell.free) {
+        cells+=`<div class="bingo-cell free-cell">⭐<br>LIBRE</div>`;
+      } else {
+        const cls=['bingo-cell', cell.marked?'marked':'', isWin?'winner-line':''].join(' ').trim();
+        cells+=`<div class="${cls}" onclick="toggleBingoCell(${bi},${ci})">
+          <div class="bc-song">${cell.song?.title||'?'}</div>
+          <div class="bc-art">${cell.song?.artist||''}</div>
+        </div>`;
+      }
+    });
+    wrap.innerHTML+=`<div class="bingo-board">
+      <div class="bingo-team-name"><span class="dot" style="background:${board.team.color}"></span>${board.team.name}${board.winner?' 🏆':''}</div>
+      <div class="bingo-grid">${cells}</div>
+    </div>`;
+  });
+}
+
+function toggleBingoCell(bi,ci) {
+  const cell=G.bingoBoards[bi].cells[ci];
+  if (cell.free) return;
+  cell.marked=!cell.marked;
+  renderBingoBoards();
+}
+
+function renderCallsLog() {
+  const log=document.getElementById('calls-log');
+  if (!G.bingoCalls.length) return;
+  log.innerHTML='';
+  [...G.bingoCalls].reverse().forEach((s,i)=>{
+    const num=G.bingoCalls.length-i;
+    const cov=s.cover?`<img src="${s.cover}" alt="">`:'🎵';
+    log.innerHTML+=`<div class="call-entry">
+      <div class="call-cover">${cov}</div>
+      <div class="call-info"><div class="call-title">${s.title}</div><div class="call-artist">${s.artist}</div></div>
+      <div class="call-num">#${num}</div>
+    </div>`;
+  });
+}
+
+// ======================================================
+// RENDER HELPERS
+// ======================================================
+function renderScoreboard() {
+  const sb=document.getElementById('scoreboard'); sb.innerHTML='';
+  G.teams.forEach((t,i)=>{
+    sb.innerHTML+=`<div class="team-row ${i===G.currentTeam?'active-team':''}" id="tr-${i}">
+      <div class="tname"><div class="dot" style="background:${t.color}"></div>${t.name}</div>
+      <div class="tscore">${t.score}</div>
+    </div>`;
+  });
+}
+
+function renderRoundDots() {
+  const wrap=document.getElementById('round-dots');
+  const done=Math.floor(G.totalTurns/cfg.numTeams);
+  wrap.innerHTML='';
+  for (let i=0;i<cfg.rounds;i++) {
+    let c='rdot';
+    if (i<done) c+=' done';
+    else if (i===done) c+=' cur';
+    wrap.innerHTML+=`<div class="${c}"></div>`;
+  }
+}
+
+function setBtnPlay(txt) {
+  const b=document.getElementById('btn-play');
+  if (b) b.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> ${txt}`;
+}
+
+function hideAll() {
+  ['setup-screen','game-screen','bingo-screen','winner-screen'].forEach(id=>{
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('game-mode-badge').classList.add('hidden');
+}
+
+function showSetup() {
+  hideAll();
+  document.getElementById('setup-screen').classList.remove('hidden');
+  document.getElementById('setup-screen').classList.add('fade-in');
+}
+
+// ======================================================
+// CONFETTI
+// ======================================================
+function confetti() {
+  const w=document.getElementById('confetti'); w.innerHTML='';
+  const cs=['#7c3aed','#a855f7','#22c55e','#f59e0b','#ef4444','#3b82f6','#ec4899'];
+  for (let i=0;i<80;i++) {
+    const p=document.createElement('div'); p.className='cp';
+    p.style.cssText=`left:${Math.random()*100}%;background:${cs[i%cs.length]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*.8}s;`;
+    w.appendChild(p);
+  }
+  setTimeout(()=>w.innerHTML='',4000);
+}
+</script>
+</body>
+</html>
