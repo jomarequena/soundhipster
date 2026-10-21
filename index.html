@@ -240,6 +240,8 @@ input[type=range] { flex:1; accent-color:var(--accent); height:4px; }
 .tl-card .tl-art  { color:var(--fg-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:78px; text-align:center; }
 .tl-card.new-song { background:var(--surface); border-color:var(--accent); box-shadow:0 0 12px var(--accent-glow); cursor:default; }
 .tl-card.new-song .tl-year { color:var(--accent-bright); }
+.tl-card.tl-card-wrong { border-color:#e05c5c; opacity:.75; cursor:default; }
+.tl-card.tl-card-wrong .tl-year { color:#e05c5c; }
 .tl-insert { display:flex; align-items:center; justify-content:center; width:36px; flex-shrink:0; }
 .tl-insert-btn {
   width:28px; height:28px; border-radius:50%; border:2px dashed var(--border2);
@@ -1237,7 +1239,8 @@ function getDecadeHint(year) {
   return `💡 Pista: esta canción es de los <strong>${d}s</strong>`;
 }
 
-function renderTimeline(showInserts, hideYears=false) {
+// revealCard: null = no mostrar nueva carta | 'correct' = ya está en G.timeline | 'wrong' = mostrar en rojo en su posición correcta
+function renderTimeline(showInserts, hideYears=false, revealCard=null) {
   const slots = document.getElementById('tl-slots');
   slots.innerHTML='';
   // Mientras los años están ocultos, mostrar en orden de inserción para no revelar cronología
@@ -1245,18 +1248,33 @@ function renderTimeline(showInserts, hideYears=false) {
   const display = hideYears
     ? [...G.timeline]
     : [...G.timeline].sort((a,b)=>(a.year||9999)-(b.year||9999));
-  const newCard = `<div class="tl-card new-song"><div class="tl-year">?</div><div class="tl-song">${G.curSong.title}</div><div class="tl-art">${G.curSong.artist}</div></div>`;
+  const newCard = `<div class="tl-card new-song"><div class="tl-year">?</div><div class="tl-song">${G.curSong?.title||''}</div><div class="tl-art">${G.curSong?.artist||''}</div></div>`;
 
   if (display.length === 0) {
     if (showInserts) {
       slots.innerHTML = `${insertBtn(0)}${newCard}${insertBtn(1)}`;
+    } else if (revealCard === 'wrong') {
+      // Mostrar la carta fallida en rojo en la única posición
+      const yr = G.curSong.year || '?';
+      slots.innerHTML = `<div class="tl-card tl-card-wrong"><div class="tl-year">${yr}</div><div class="tl-song">${G.curSong.title}</div><div class="tl-art">${G.curSong.artist}</div></div>`;
     } else {
       slots.innerHTML = newCard;
     }
   } else {
     let html = '';
     if (showInserts) html += insertBtn(0);
+
+    // Para revealCard='wrong': insertar la carta fallida en su posición cronológica correcta
+    const wrongYear = revealCard === 'wrong' ? (G.curSong.year || 0) : null;
+    let wrongInserted = false;
+
     display.forEach((s,i)=>{
+      // Insertar carta fallida antes de la primera carta con año mayor
+      if (wrongYear !== null && !wrongInserted && (s.year || 9999) > wrongYear) {
+        const yr = G.curSong.year || '?';
+        html += `<div class="tl-card tl-card-wrong"><div class="tl-year">${yr}</div><div class="tl-song">${G.curSong.title}</div><div class="tl-art">${G.curSong.artist}</div></div>`;
+        wrongInserted = true;
+      }
       const yearTxt = hideYears ? '···' : (s.year||'?');
       html += `<div class="tl-card">
         <div class="tl-year">${yearTxt}</div>
@@ -1265,6 +1283,12 @@ function renderTimeline(showInserts, hideYears=false) {
       </div>`;
       if (showInserts) html += insertBtn(i+1);
     });
+    // Si la carta fallida va al final
+    if (wrongYear !== null && !wrongInserted) {
+      const yr = G.curSong.year || '?';
+      html += `<div class="tl-card tl-card-wrong"><div class="tl-year">${yr}</div><div class="tl-song">${G.curSong.title}</div><div class="tl-art">${G.curSong.artist}</div></div>`;
+    }
+
     slots.innerHTML = html;
     if (showInserts) {
       document.querySelectorAll('.tl-insert-btn').forEach((b,i)=>{
@@ -1299,18 +1323,22 @@ function confirmGenPlacement() {
 
   let isCorrect = false;
   if (year) {
-    // Correcto si:
-    // 1. Las dos cartas vecinas son adyacentes en el orden cronológico real
-    // 2. El año de la nueva canción cae entre ellas
-    const prevIdx = prevCard ? sorted.findIndex(s => s.title===prevCard.title && s.year===prevCard.year) : -1;
-    const nextIdx = nextCard ? sorted.findIndex(s => s.title===nextCard.title && s.year===nextCard.year) : sorted.length;
-    const sortedPrevIdx = prevCard ? prevIdx : -1;
-    const sortedNextIdx = nextCard ? nextIdx : sorted.length;
-    // Son adyacentes si sus índices en sorted son consecutivos
-    const areAdjacent = (sortedNextIdx - sortedPrevIdx) === 1;
-    const before = sorted[sortedPrevIdx]?.year || 0;
-    const after  = sorted[sortedNextIdx]?.year  || 9999;
-    isCorrect = areAdjacent && year >= before && year <= after;
+    // La respuesta es correcta si el año de la nueva canción cae entre los años
+    // de las dos cartas vecinas que eligió el jugador.
+    // prevCard/nextCard son las cartas reales (con sus años) del display desordenado.
+    const lo = prevCard?.year || 0;
+    const hi = nextCard?.year || 9999;
+    // Si las cartas vecinas están en orden cronológico inverso (display desordenado),
+    // normalizamos el rango para que lo <= hi
+    const rangeMin = Math.min(lo, hi);
+    const rangeMax = Math.max(lo, hi);
+    // Además, las cartas vecinas deben ser cronológicamente adyacentes en el timeline real:
+    // no debe haber ninguna carta existente con año entre rangeMin y rangeMax
+    const hasCardBetween = sorted.some(s => {
+      const y = s.year || 0;
+      return y > rangeMin && y < rangeMax;
+    });
+    isCorrect = year >= rangeMin && year <= rangeMax && !hasCardBetween;
   } else {
     // sin año disponible: dar punto pero avisar
     isCorrect = true;
@@ -1319,10 +1347,10 @@ function confirmGenPlacement() {
   if (isCorrect) {
     // La carta se queda en el timeline con el año revelado
     G.timeline.push({ ...G.curSong });
-    renderTimeline(false, false); // mostrar timeline con años visibles
+    renderTimeline(false, false, 'correct');
   } else {
-    // La carta no entra al timeline — desaparece
-    renderTimeline(false, false); // mostrar el timeline existente sin la nueva carta
+    // La carta no entra al timeline, pero se muestra en rojo en su posición correcta
+    renderTimeline(false, false, 'wrong');
   }
   revealSong();
   // Ocultar controles pero dejar el timeline visible para ver el resultado
