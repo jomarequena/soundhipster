@@ -1149,8 +1149,6 @@ function stopAudio() {
 // ======================================================
 function showAnswerSection() {
   document.getElementById('pcontrols').style.display='none';
-  const cov=document.getElementById('cover');
-  if (G.curSong.cover) cov.innerHTML=`<img src="${G.curSong.cover}" alt="">`;
 
   if (cfg.gameMode==='generaciones') {
     showGenSection();
@@ -1321,6 +1319,10 @@ function revealGenResult(ok, year) {
 // RESULT
 // ======================================================
 function revealSong() {
+  // revelar portada
+  const cov = document.getElementById('cover');
+  if (G.curSong.cover) cov.innerHTML=`<img src="${G.curSong.cover}" alt="">`;
+  // revelar título y artista
   document.getElementById('stitle').textContent=G.curSong.title;
   const yr = G.curSong.year ? ` · ${G.curSong.year}` : '';
   document.getElementById('sartist').textContent=G.curSong.artist + yr;
