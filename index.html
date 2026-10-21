@@ -1160,6 +1160,10 @@ function showAnswerSection() {
   const sec=document.getElementById('ans-section'); sec.classList.remove('hidden');
   if (cfg.ansMode==='multi') {
     document.getElementById('ans-free').classList.add('hidden');
+    document.getElementById('ans-artist-wrap').classList.remove('hidden');
+    document.getElementById('ans-artist-input').value='';
+    document.getElementById('artist-bonus-wrap').classList.add('hidden');
+    setTimeout(()=>document.getElementById('ans-artist-input').focus(), 80);
     const correct=G.curSong.title;
     const dis=G.songs.filter(s=>s.id!==G.curSong.id).map(s=>s.title).filter((v,i,a)=>a.indexOf(v)===i).sort(()=>Math.random()-.5).slice(0,3);
     const opts=[...dis,correct].sort(()=>Math.random()-.5);
@@ -1192,23 +1196,12 @@ function checkAns(sel,correct,el) {
   const ok=sel===correct;
   el.classList.add(ok?'correct':'wrong');
   if (!ok) document.querySelectorAll('.ans-opt').forEach(b=>{ if(b.textContent===correct) b.classList.add('correct'); });
+  // recoger artista ya escrito antes de elegir la canción
+  const artV=document.getElementById('ans-artist-input').value.trim();
+  const okArtist = ok && artV ? matchArtist(artV) : false;
+  document.getElementById('ans-artist-wrap').classList.add('hidden');
   revealSong();
-  if (ok) {
-    // mostrar campo artista para el punto extra
-    const wrap=document.getElementById('artist-bonus-wrap');
-    wrap.classList.remove('hidden');
-    document.getElementById('ans-artist-bonus').value='';
-    setTimeout(()=>document.getElementById('ans-artist-bonus').focus(), 120);
-  } else {
-    setTimeout(()=>revealResult(false, false, false), 1100);
-  }
-}
-
-function submitArtistBonus() {
-  const v=document.getElementById('ans-artist-bonus').value.trim();
-  const ok = v ? matchArtist(v) : false;
-  document.getElementById('artist-bonus-wrap').classList.add('hidden');
-  revealResult(true, ok, false);
+  setTimeout(()=>revealResult(ok, okArtist, false), 1100);
 }
 
 function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,'').trim(); }
