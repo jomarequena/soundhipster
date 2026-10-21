@@ -1028,6 +1028,10 @@ function beginTurn() {
   document.getElementById('pcontrols').style.display='flex';
   document.getElementById('ans-section').classList.add('hidden');
   document.getElementById('gen-section').classList.add('hidden');
+  // Restaurar visibilidad de los controles de Generaciones para el siguiente turno
+  document.getElementById('gen-instr').classList.remove('hidden');
+  document.getElementById('gen-decade-hint').classList.remove('hidden');
+  document.getElementById('gen-actions').classList.remove('hidden');
   document.getElementById('result-card').classList.add('hidden');
 
   if (G.songIdx >= G.songs.length) G.songIdx=0;
@@ -1312,11 +1316,19 @@ function confirmGenPlacement() {
     isCorrect = true;
   }
 
-  G.timeline.push({ ...G.curSong });
-  // revelar años de todas las cartas antes de ocultar la sección
-  renderTimeline(false, false);
+  if (isCorrect) {
+    // La carta se queda en el timeline con el año revelado
+    G.timeline.push({ ...G.curSong });
+    renderTimeline(false, false); // mostrar timeline con años visibles
+  } else {
+    // La carta no entra al timeline — desaparece
+    renderTimeline(false, false); // mostrar el timeline existente sin la nueva carta
+  }
   revealSong();
-  document.getElementById('gen-section').classList.add('hidden');
+  // Ocultar controles pero dejar el timeline visible para ver el resultado
+  document.getElementById('gen-instr').classList.add('hidden');
+  document.getElementById('gen-decade-hint').classList.add('hidden');
+  document.getElementById('gen-actions').classList.add('hidden');
   revealGenResult(isCorrect, year);
 }
 
