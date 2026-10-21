@@ -397,6 +397,8 @@ input[type=range] { flex:1; accent-color:var(--accent); height:4px; }
           <div class="chip active" data-g="rnb soul">R&amp;B / Soul</div>
           <div class="chip active" data-g="indie alternative">Indie</div>
           <div class="chip active" data-g="dance pop">Dance</div>
+          <div class="chip active" data-g="spanish">🇪🇸 En español</div>
+          <div class="chip active" data-g="megahits">⭐ Súper éxitos</div>
           <div class="chip" data-g="flamenco">Flamenco</div>
           <div class="chip" data-g="jazz blues">Jazz</div>
           <div class="chip" data-g="classical music">Clásica</div>
@@ -442,6 +444,8 @@ input[type=range] { flex:1; accent-color:var(--accent); height:4px; }
           <div class="chip active" data-g="rnb soul">R&amp;B / Soul</div>
           <div class="chip active" data-g="indie alternative">Indie</div>
           <div class="chip active" data-g="dance pop">Dance</div>
+          <div class="chip active" data-g="spanish">🇪🇸 En español</div>
+          <div class="chip active" data-g="megahits">⭐ Súper éxitos</div>
           <div class="chip" data-g="flamenco">Flamenco</div>
           <div class="chip" data-g="jazz blues">Jazz</div>
           <div class="chip" data-g="country music">Country</div>
@@ -923,8 +927,42 @@ async function fetchSongs(genres, needed) {
     'canciones en español', 'éxitos latinos', 'nueva canción española'
   ];
 
+  // Términos especiales por género
+  const specialTerms = {
+    'spanish': [
+      'Shakira', 'Enrique Iglesias', 'Alejandro Sanz', 'Maluma', 'Bad Bunny',
+      'J Balvin', 'Daddy Yankee', 'Rosalía', 'C. Tangana', 'Ozuna', 'Karol G',
+      'Melendi', 'Pablo Alborán', 'Fito y Fitipaldis', 'Estopa', 'Vetusta Morla',
+      'La Oreja de Van Gogh', 'Amaral', 'Heroes del Silencio', 'El Canto del Loco',
+      'Ana Mena', 'Aitana', 'Duki', 'Bizarrap', 'Rauw Alejandro', 'Anuel AA',
+      'Nicky Jam', 'Luis Fonsi', 'Marc Anthony', 'Romeo Santos', 'Juan Luis Guerra',
+      'Carlos Vives', 'Juanes', 'Maná', 'Alejandro Fernández', 'Ricky Martin',
+      'Jennifer Lopez', 'Pitbull español', 'pop español', 'musica española',
+      'reggaeton hits', 'latin pop', 'canciones en español', 'éxitos latinos',
+      'flamenco pop', 'nueva canción española', 'exitos españa',
+    ],
+    'megahits': [
+      'biggest hits ever', 'best songs of all time', 'most popular songs',
+      'billboard number one', 'grammy best song', 'best selling singles',
+      'most streamed songs', 'top 100 songs ever', 'iconic songs',
+      'best pop songs ever', 'greatest pop hits', 'anthems',
+      'Michael Jackson', 'Adele', 'Ed Sheeran', 'Taylor Swift', 'Beyoncé',
+      'Drake', 'Eminem', 'Rihanna', 'Bruno Mars', 'Lady Gaga',
+      'Queen', 'The Beatles', 'ABBA', 'Whitney Houston', 'Mariah Carey',
+      'Elvis Presley', 'Madonna', 'Coldplay', 'U2', 'Bon Jovi',
+      'best 80s songs', 'best 90s songs', 'best 2000s songs', 'best 2010s songs',
+      'one hit wonders', 'summer hits', 'party anthems', 'classic hits',
+    ],
+  };
+
   const terms = [];
-  genres.forEach(g => { terms.push(g); terms.push(`${g} hits`); terms.push(`best ${g}`); });
+  genres.forEach(g => {
+    if (specialTerms[g]) {
+      terms.push(...specialTerms[g]);
+    } else {
+      terms.push(g); terms.push(`${g} hits`); terms.push(`best ${g}`);
+    }
+  });
   const shuffledBase = [...baseTerms].sort(() => Math.random() - 0.5);
   terms.push(...shuffledBase);
 
