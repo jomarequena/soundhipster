@@ -990,13 +990,45 @@ async function fetchSongs(genres, needed) {
             album: t.album?.title || '',
             cover: t.album?.cover_medium || t.album?.cover || '',
             preview: t.preview,
-            year: yr
+            year: yr,
+            _albumId: yr ? null : (t.album?.id || null) // solo guardar si no tenemos año
           });
         }
       }
     } catch(e) {}
     i++;
     if (i % 3 === 0) await new Promise(r => setTimeout(r, 150));
+  }
+
+  // Enriquecer canciones sin año: consultar /api/album para obtener release_date real
+  const songsWithoutYear = fetched.filter(s => !s.year);
+  if (songsWithoutYear.length > 0) {
+    // Álbumes únicos de canciones sin año (extraemos el albumId del cover URL)
+    // Guardamos el albumId al hacer push para poder enriquecer
+    // Como ya no lo tenemos, necesitamos re-buscar — se hace al guardar (ver arriba)
+    // Por ahora enriquecer todos los que tengan albumId cacheado en _albumId
+    const albumIds = [...new Set(songsWithoutYear.map(s => s._albumId).filter(Boolean))];
+    if (albumIds.length > 0) {
+      try {
+        const albumDates = {};
+        await Promise.all(albumIds.slice(0, 20).map(async (aid) => {
+          try {
+            const r = await fetch(`/api/album?id=${aid}`);
+            if (r.ok) {
+              const a = await r.json();
+              if (a.release_date) albumDates[aid] = a.release_date;
+            }
+          } catch {}
+        }));
+        fetched.forEach(s => {
+          if (!s.year && s._albumId && albumDates[s._albumId]) {
+            const p = parseInt(albumDates[s._albumId].slice(0, 4));
+            if (p > 1900 && p < 2100) s.year = p;
+          }
+          delete s._albumId;
+        });
+      } catch {}
+    }
   }
 
   shuffle(fetched);
