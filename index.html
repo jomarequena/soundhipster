@@ -860,6 +860,11 @@ async function startGame() {
   G.songs = await fetchSongs(cfg.genres, G.maxTurns + 15);
   hideLoading();
 
+  // En Generaciones, descartar canciones sin año (no se pueden colocar en la línea temporal)
+  if (cfg.gameMode === 'generaciones') {
+    G.songs = G.songs.filter(s => s.year);
+  }
+
   if (!G.songs.length) {
     showToast('❌ Error cargando canciones — revisa tu conexión');
     document.getElementById('game-screen').classList.add('hidden');
