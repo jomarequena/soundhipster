@@ -979,7 +979,9 @@ async function fetchSongs(genres, needed) {
       for (const t of results.sort(() => Math.random() - 0.5)) {
         if (!seen.has(t.id)) {
           seen.add(t.id);
-          const yrParsed = t.release_date ? parseInt(t.release_date.slice(0,4)) : null;
+          // /search no devuelve release_date en el track, pero sí en t.album.release_date
+          const rawDate = t.release_date || t.album?.release_date || null;
+          const yrParsed = rawDate ? parseInt(rawDate.slice(0,4)) : null;
           const yr = (yrParsed && yrParsed > 1900 && yrParsed < 2100) ? yrParsed : null;
           fetched.push({
             id: t.id,

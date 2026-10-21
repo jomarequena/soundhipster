@@ -25,6 +25,34 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
+
+    // Enriquecer cada track con release_date del álbum si no viene en el track
+    // Deezer /search no devuelve release_date en el track, pero sí en /album/{id}
+    // Para no hacer N peticiones, obtenemos álbumes únicos en paralelo (máx 8)
+    if (data.data && Array.isArray(data.data)) {
+      const albumIds = [...new Set(data.data.map(t => t.album?.id).filter(Boolean))].slice(0, 8);
+      if (albumIds.length > 0) {
+        try {
+          const albumDates = {};
+          await Promise.all(albumIds.map(async (aid) => {
+            try {
+              const ar = await fetch(`https://api.deezer.com/album/${aid}`);
+              if (ar.ok) {
+                const a = await ar.json();
+                if (a.release_date) albumDates[aid] = a.release_date;
+              }
+            } catch {}
+          }));
+          data.data = data.data.map(t => {
+            if (!t.release_date && t.album?.id && albumDates[t.album.id]) {
+              return { ...t, release_date: albumDates[t.album.id] };
+            }
+            return t;
+          });
+        } catch {}
+      }
+    }
+
     return res.status(200).json(data);
   } catch (err) {
     return res.status(500).json({ error: err.message });
