@@ -906,32 +906,51 @@ async function fetchSongs(genres, needed) {
   needed = needed || (G.maxTurns + 10);
 
   const baseTerms = [
-    // Internacional
-    'top hits', 'greatest hits', 'best songs ever', 'classic hits',
-    'pop hits 2000s', 'pop hits 2010s', 'pop hits 1990s', 'pop hits 1980s',
-    'rock anthems', 'dance hits', 'party songs', 'summer hits',
-    'one hit wonders', 'number one hits', 'radio hits',
-    'hip hop classics', 'rap hits', 'rnb hits', 'soul classics',
-    'indie hits', 'alternative hits', 'britpop', 'grunge hits',
-    'edm hits', 'house music', 'techno', 'trance hits',
-    'jazz standards', 'blues classics', 'country hits',
-    'k-pop hits', 'movie soundtracks', 'billboard hot 100',
-    // Español — mucho más peso
-    'reggaeton hits', 'pop español', 'musica española', 'flamenco pop',
-    'latin hits', 'salsa', 'bachata', 'merengue',
-    'Alejandro Sanz', 'Shakira', 'Enrique Iglesias', 'Maluma',
-    'Bad Bunny', 'J Balvin', 'Daddy Yankee', 'Ozuna',
-    'Rosalía', 'C. Tangana', 'Melendi', 'Pablo Alborán',
-    'La Oreja de Van Gogh', 'Amaral', 'Estopa', 'Heroes del Silencio',
-    'Fito y Fitipaldis', 'El Canto del Loco', 'Vetusta Morla',
-    'Ana Mena', 'Aitana', 'Duki', 'Bizarrap',
-    'Rauw Alejandro', 'Anuel AA', 'Karol G', 'Nicky Jam',
-    'Luis Fonsi', 'Marc Anthony', 'Romeo Santos', 'Juan Luis Guerra',
-    'Carlos Vives', 'Juanes', 'Maná', 'Alejandro Fernández',
-    'musica latina 2000s', 'musica latina 2010s', 'musica latina 2020s',
-    'exitos españa', 'pop rock español', 'flamenco rumba',
+    // POP por décadas
+    'pop hits 1960s', 'pop hits 1970s', 'pop hits 1980s', 'pop hits 1990s',
+    'pop hits 2000s', 'pop hits 2010s', 'pop hits 2020s',
+    'greatest hits', 'best songs ever', 'classic hits', 'number one hits',
+    'summer hits', 'party songs', 'radio hits', 'one hit wonders',
+    // ROCK
+    'classic rock', 'rock anthems', 'hard rock', 'soft rock', 'rock 70s',
+    'rock 80s', 'rock 90s', 'grunge', 'britpop', 'alternative rock',
+    'punk rock', 'heavy metal classics', 'progressive rock', 'glam rock',
+    // HIP HOP / RAP / R&B
+    'hip hop classics', 'rap hits 90s', 'rap hits 2000s', 'rap hits 2010s',
+    'rnb hits', 'soul classics', 'motown hits', 'funk classics',
+    'old school hip hop', 'trap hits', 'drill',
+    // DANCE / ELECTRONIC
+    'dance hits', 'edm hits', 'house music', 'techno classics',
+    'trance hits', 'eurodance', 'disco hits', 'club hits',
+    'electronic music', 'deep house', 'dance 90s', 'dance 2000s',
+    // INDIE / ALTERNATIVE
+    'indie hits', 'indie pop', 'indie rock', 'alternative hits',
+    'folk pop', 'dream pop', 'shoegaze', 'post punk',
+    // OTROS GÉNEROS
+    'jazz standards', 'blues classics', 'country hits', 'reggae classics',
+    'k-pop hits', 'movie soundtracks', 'musical theatre',
+    'latin jazz', 'bossa nova', 'afrobeats',
+    // ARTISTAS GLOBALES icónicos
+    'The Beatles', 'Rolling Stones', 'David Bowie', 'Led Zeppelin',
+    'Pink Floyd', 'Queen', 'ABBA', 'Elton John', 'Madonna',
+    'Michael Jackson', 'Prince', 'Whitney Houston', 'Mariah Carey',
+    'Elvis Presley', 'Frank Sinatra', 'Stevie Wonder', 'Aretha Franklin',
+    'Fleetwood Mac', 'Eagles', 'Bruce Springsteen', 'Billy Joel',
+    'U2', 'Depeche Mode', 'New Order', 'Pet Shop Boys',
+    'Nirvana', 'Pearl Jam', 'Red Hot Chili Peppers', 'Radiohead',
+    'Oasis', 'Blur', 'Spice Girls', 'Backstreet Boys', 'NSYNC',
+    'Eminem', 'Jay-Z', 'Kanye West', 'Beyoncé', 'Rihanna',
+    'Lady Gaga', 'Katy Perry', 'Bruno Mars', 'Ed Sheeran',
+    'Adele', 'Amy Winehouse', 'Coldplay', 'Linkin Park',
+    'Taylor Swift', 'Billie Eilish', 'Ariana Grande', 'Dua Lipa',
+    'The Weeknd', 'Drake', 'Post Malone', 'Harry Styles',
+    // ESPAÑOL / LATINO — peso extra
+    'pop español', 'musica española', 'exitos españa',
+    'reggaeton hits', 'latin pop', 'latin hits',
+    'salsa clasica', 'bachata hits', 'merengue',
     'corridos tumbados', 'trap latino', 'cumbia hits',
-    'canciones en español', 'éxitos latinos', 'nueva canción española'
+    'musica latina 1970s', 'musica latina 1980s', 'musica latina 1990s',
+    'musica latina 2000s', 'musica latina 2010s', 'musica latina 2020s',
   ];
 
   // Términos especiales por género
@@ -969,16 +988,45 @@ async function fetchSongs(genres, needed) {
       'Quevedo', 'Mora', 'Beret', 'María Becerra',
     ],
     'megahits': [
-      'biggest hits ever', 'best songs of all time', 'most popular songs',
-      'billboard number one', 'grammy best song', 'best selling singles',
-      'most streamed songs', 'top 100 songs ever', 'iconic songs',
-      'best pop songs ever', 'greatest pop hits', 'anthems',
-      'Michael Jackson', 'Adele', 'Ed Sheeran', 'Taylor Swift', 'Beyoncé',
-      'Drake', 'Eminem', 'Rihanna', 'Bruno Mars', 'Lady Gaga',
-      'Queen', 'The Beatles', 'ABBA', 'Whitney Houston', 'Mariah Carey',
-      'Elvis Presley', 'Madonna', 'Coldplay', 'U2', 'Bon Jovi',
-      'best 80s songs', 'best 90s songs', 'best 2000s songs', 'best 2010s songs',
-      'one hit wonders', 'summer hits', 'party anthems', 'classic hits',
+      // Búsquedas genéricas de éxitos
+      'biggest hits ever', 'best songs of all time', 'most popular songs ever',
+      'billboard number one hits', 'grammy award song of the year',
+      'best selling singles of all time', 'most streamed songs',
+      'iconic songs', 'greatest pop hits', 'anthems all time',
+      'best 60s songs', 'best 70s songs', 'best 80s songs',
+      'best 90s songs', 'best 2000s songs', 'best 2010s songs', 'best 2020s songs',
+      // 60s–70s
+      'The Beatles', 'Rolling Stones', 'Elvis Presley', 'Frank Sinatra',
+      'Aretha Franklin', 'James Brown', 'Stevie Wonder', 'Marvin Gaye',
+      'Led Zeppelin', 'Pink Floyd', 'David Bowie', 'Elton John',
+      'ABBA', 'Bee Gees', 'Donna Summer', 'Gloria Gaynor',
+      'Eagles', 'Fleetwood Mac', 'Simon and Garfunkel', 'Neil Diamond',
+      // 80s
+      'Michael Jackson', 'Madonna', 'Prince', 'Whitney Houston',
+      'Bon Jovi', 'Def Leppard', 'AC DC', 'Guns N Roses',
+      'Depeche Mode', 'New Order', 'Pet Shop Boys', 'Duran Duran',
+      'Cyndi Lauper', 'Tina Turner', 'George Michael', 'Wham',
+      'U2', 'Bruce Springsteen', 'Billy Joel', 'Lionel Richie',
+      // 90s
+      'Nirvana', 'Pearl Jam', 'Red Hot Chili Peppers', 'Radiohead',
+      'Oasis', 'Blur', 'Pulp', 'Spice Girls', 'Backstreet Boys',
+      'Mariah Carey', 'Celine Dion', 'Whitney Houston', 'TLC',
+      'Eminem', 'Jay-Z', 'Tupac', 'Notorious BIG', 'Snoop Dogg',
+      'Alanis Morissette', 'No Doubt', 'Sheryl Crow',
+      // 2000s
+      'Beyoncé', 'Rihanna', 'Usher', 'Alicia Keys', 'Nelly',
+      'OutKast', 'Kanye West', 'Linkin Park', 'Coldplay',
+      'Amy Winehouse', 'Norah Jones', 'Jack Johnson',
+      'Shakira', 'Enrique Iglesias', 'Jennifer Lopez',
+      // 2010s
+      'Adele', 'Ed Sheeran', 'Taylor Swift', 'Lady Gaga',
+      'Bruno Mars', 'Katy Perry', 'Justin Bieber', 'Drake',
+      'The Weeknd', 'Sia', 'Sam Smith', 'Lorde', 'Lana Del Rey',
+      'Pharrell Williams', 'Robin Thicke', 'Pitbull',
+      // 2020s
+      'Billie Eilish', 'Dua Lipa', 'Olivia Rodrigo', 'Harry Styles',
+      'Bad Bunny', 'Rosalía', 'Post Malone', 'Ariana Grande',
+      'BTS', 'Blackpink', 'Doja Cat', 'Lizzo', 'Glass Animals',
     ],
   };
 
